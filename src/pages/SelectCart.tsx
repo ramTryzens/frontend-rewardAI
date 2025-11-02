@@ -70,7 +70,7 @@ const SelectCart = () => {
               <Button
                 variant="hero"
                 size="lg"
-                onClick={() => navigate("/cart/1")}
+                onClick={() => navigate("/cart/57b5d61d-8bb2-46c3-b27b-ddc35dff7ccd")}
                 className="w-full"
               >
                 View Cart
@@ -80,7 +80,21 @@ const SelectCart = () => {
 
           <motion.div variants={itemVariants}>
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 hover:bg-white/15 transition-all duration-300 shadow-lg hover:shadow-xl">
-              <h2 className="text-2xl font-semibold text-foreground mb-6">Cart 2</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-semibold text-foreground">Cart 2</h2>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button className="text-muted-foreground hover:text-foreground transition-colors">
+                        <Info className="w-5 h-5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="font-medium">Customer: John Doe</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Button
                 variant="hero"
                 size="lg"

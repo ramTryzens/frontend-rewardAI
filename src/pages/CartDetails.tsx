@@ -5,6 +5,7 @@ import { getCartDetails } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Package, DollarSign, User, ArrowLeft, AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import PromotionCards from "@/components/PromotionCards";
 
 const CartDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -167,7 +168,7 @@ const CartDetails = () => {
                           </span>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right self-center">
                         <p className="text-foreground font-bold">
                           {currency} {(item.sale_price * item.quantity).toFixed(2)}
                         </p>
@@ -184,6 +185,17 @@ const CartDetails = () => {
             )}
           </div>
         </div>
+
+        {/* Promotion Cards Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="mt-8"
+        >
+          <h2 className="text-2xl font-bold text-foreground mb-6">Special Offers</h2>
+          <PromotionCards />
+        </motion.div>
       </motion.div>
     </div>
   );

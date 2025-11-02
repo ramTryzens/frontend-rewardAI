@@ -31,11 +31,11 @@ const Home = () => {
           transition={{ delay: 0.3 }}
           className="text-5xl md:text-6xl font-bold text-foreground mb-6 leading-tight"
         >
-          Welcome to the{" "}
+          Welcome to a demo of {" "}
           <span className="bg-gradient-primary bg-clip-text text-transparent">
-            BigCommerce
+            Reward AI
           </span>{" "}
-          Cart Viewer
+          in action
         </motion.h1>
 
         <motion.p

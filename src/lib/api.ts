@@ -1,5 +1,5 @@
-const BIGCOMMERCE_API_URL = import.meta.env.VITE_BIGCOMMERCE_API_URL || 'https://api.bigcommerce.com/stores/{store_hash}/v3';
-const BIGCOMMERCE_TOKEN = import.meta.env.VITE_BIGCOMMERCE_TOKEN;
+// Backend API URL (local proxy server)
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
 
 export interface CartItem {
   id: string;
@@ -26,22 +26,19 @@ export interface Cart {
 }
 
 export async function getCartDetails(cartId: string): Promise<Cart> {
-  if (!BIGCOMMERCE_TOKEN) {
-    throw new Error('BigCommerce API token not configured. Please set VITE_BIGCOMMERCE_TOKEN in your environment variables.');
+  const res = await fetch(`${API_BASE_URL}/carts/${cartId}`, {
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(errorData.error || `Failed to fetch cart: ${res.statusText}`);
   }
 
-  const res = await fetch(`${BIGCOMMERCE_API_URL}/carts/${cartId}`, {
-    headers: {
-      'X-Auth-Token': BIGCOMMERCE_TOKEN,
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    }
-  });
-  
-  if (!res.ok) {
-    throw new Error(`Failed to fetch cart: ${res.statusText}`);
-  }
-  
   const response = await res.json();
+  console.log("🚀 ~ getCartDetails ~ response:", response);
   return response.data;
 }
