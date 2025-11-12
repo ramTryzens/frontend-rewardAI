@@ -42,3 +42,176 @@ export async function getCartDetails(cartId: string): Promise<Cart> {
   console.log("🚀 ~ getCartDetails ~ response:", response);
   return response.data;
 }
+
+// ========== Ecommerce Details API ==========
+
+export interface EcommerceDetail {
+  _id: string;
+  name: string;
+  api_version: string;
+  api_urls?: Record<string, { endpoint: string; method: string }>;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getEcommerceDetails(): Promise<EcommerceDetail[]> {
+  const res = await fetch(`${API_BASE_URL}/ecommerce-details`);
+  if (!res.ok) throw new Error('Failed to fetch ecommerce details');
+  const response = await res.json();
+  return response.data;
+}
+
+export async function createEcommerceDetail(data: Partial<EcommerceDetail>): Promise<EcommerceDetail> {
+  const res = await fetch(`${API_BASE_URL}/ecommerce-details`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Failed to create ecommerce detail');
+  }
+  const response = await res.json();
+  return response.data;
+}
+
+export async function updateEcommerceDetail(id: string, data: Partial<EcommerceDetail>): Promise<EcommerceDetail> {
+  const res = await fetch(`${API_BASE_URL}/ecommerce-details/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Failed to update ecommerce detail');
+  }
+  const response = await res.json();
+  return response.data;
+}
+
+export async function deleteEcommerceDetail(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/ecommerce-details/${id}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Failed to delete ecommerce detail');
+  }
+}
+
+// ========== Rules API ==========
+
+export interface Rule {
+  _id: string;
+  key: string;
+  enabled: boolean;
+  value?: boolean | number;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getRules(): Promise<Rule[]> {
+  const res = await fetch(`${API_BASE_URL}/rules`);
+  if (!res.ok) throw new Error('Failed to fetch rules');
+  const response = await res.json();
+  return response.data;
+}
+
+export async function createRule(data: Partial<Rule>): Promise<Rule> {
+  const res = await fetch(`${API_BASE_URL}/rules`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Failed to create rule');
+  }
+  const response = await res.json();
+  return response.data;
+}
+
+export async function updateRule(id: string, data: Partial<Rule>): Promise<Rule> {
+  const res = await fetch(`${API_BASE_URL}/rules/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Failed to update rule');
+  }
+  const response = await res.json();
+  return response.data;
+}
+
+export async function deleteRule(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/rules/${id}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Failed to delete rule');
+  }
+}
+
+// ========== Merchants API ==========
+
+export interface Merchant {
+  _id: string;
+  name: string;
+  ecomDetails: {
+    platform: string;
+    accessKey: string;
+  };
+  businessRules: Record<string, boolean | number>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getMerchants(): Promise<Merchant[]> {
+  const res = await fetch(`${API_BASE_URL}/merchants`);
+  if (!res.ok) throw new Error('Failed to fetch merchants');
+  const response = await res.json();
+  return response.data;
+}
+
+export async function createMerchant(data: Partial<Merchant>): Promise<Merchant> {
+  const res = await fetch(`${API_BASE_URL}/merchants`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Failed to create merchant');
+  }
+  const response = await res.json();
+  return response.data;
+}
+
+export async function updateMerchant(id: string, data: Partial<Merchant>): Promise<Merchant> {
+  const res = await fetch(`${API_BASE_URL}/merchants/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Failed to update merchant');
+  }
+  const response = await res.json();
+  return response.data;
+}
+
+export async function deleteMerchant(id: string): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/merchants/${id}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Failed to delete merchant');
+  }
+}

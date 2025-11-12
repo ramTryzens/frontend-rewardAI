@@ -1,13 +1,23 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, Settings } from "lucide-react";
 
 const Home = () => {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gradient-bg flex items-center justify-center p-4">
+      <div className="absolute top-4 right-4">
+        <Button
+          variant="ghost"
+          onClick={() => navigate("/admin")}
+          className="gap-2"
+        >
+          <Settings className="w-4 h-4" />
+          Admin
+        </Button>
+      </div>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
