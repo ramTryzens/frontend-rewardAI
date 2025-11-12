@@ -7,13 +7,9 @@ import { initializeRules } from './config/initializeRules.js';
 import ecommerceDetailsRouter from './routes/ecommerceDetails.js';
 import rulesRouter from './routes/rules.js';
 import merchantsRouter from './routes/merchants.js';
-import connectDB from './server/db/connection.js';
 import userRoutes from './server/routes/userRoutes.js';
 
 dotenv.config();
-
-// Connect to MongoDB
-connectDB();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
