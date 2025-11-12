@@ -4,11 +4,11 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Settings } from "lucide-react";
-import MerchantsTab from "@/components/admin/MerchantsTab";
-import EcommerceTab from "@/components/admin/EcommerceTab";
-import RulesTab from "@/components/admin/RulesTab";
+import MerchantsTab from "@/components/merchant-admin/MerchantsTab";
+import EcommerceTab from "@/components/merchant-admin/EcommerceTab";
+import RulesTab from "@/components/merchant-admin/RulesTab";
 
-const Admin = () => {
+const MerchantAdmin = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("merchants");
 
@@ -95,4 +95,4 @@ const Admin = () => {
   );
 };
 
-export default Admin;
+export default MerchantAdmin;

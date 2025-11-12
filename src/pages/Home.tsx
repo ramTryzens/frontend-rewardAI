@@ -11,7 +11,7 @@ const Home = () => {
       <div className="absolute top-4 right-4">
         <Button
           variant="ghost"
-          onClick={() => navigate("/admin")}
+          onClick={() => navigate("/merchant-admin")}
           className="gap-2"
         >
           <Settings className="w-4 h-4" />
