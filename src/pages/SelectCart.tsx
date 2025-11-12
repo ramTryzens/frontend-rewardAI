@@ -1,7 +1,9 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Info } from "lucide-react";
+import { Info, ShoppingCart } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { useState } from "react";
 import {
   Tooltip,
   TooltipContent,
@@ -11,6 +13,17 @@ import {
 
 const SelectCart = () => {
   const navigate = useNavigate();
+  const [customCartId, setCustomCartId] = useState("");
+  const [customerId, setCustomerId] = useState("");
+
+  const handleViewCart = () => {
+    if (customCartId.trim()) {
+      const customerIdParam = customerId.trim() || "3"; // Default to 3 if not provided
+      navigate(`/cart/${customCartId.trim()}?customerId=${customerIdParam}`);
+    } else {
+      alert("Please enter a valid Cart ID");
+    }
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -46,66 +59,80 @@ const SelectCart = () => {
           variants={itemVariants}
           className="text-muted-foreground text-center mb-12"
         >
-          Choose a cart to view its details
+          Enter your cart ID to view its details and get personalized AI offers
         </motion.p>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <motion.div variants={itemVariants}>
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 hover:bg-white/15 transition-all duration-300 shadow-lg hover:shadow-xl">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-semibold text-foreground">Cart 1</h2>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button className="text-muted-foreground hover:text-foreground transition-colors">
-                        <Info className="w-5 h-5" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="font-medium">Customer: John Doe</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+        <motion.div variants={itemVariants} className="mb-8">
+          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 shadow-lg max-w-xl mx-auto">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="bg-gradient-primary p-3 rounded-lg">
+                <ShoppingCart className="w-6 h-6 text-primary-foreground" />
               </div>
-              <Button
-                variant="hero"
-                size="lg"
-                onClick={() => navigate("/cart/57b5d61d-8bb2-46c3-b27b-ddc35dff7ccd")}
-                className="w-full"
-              >
-                View Cart
-              </Button>
+              <div>
+                <h2 className="text-2xl font-semibold text-foreground">Enter Cart ID</h2>
+                <p className="text-sm text-muted-foreground">View your cart and get AI-powered offers</p>
+              </div>
             </div>
-          </motion.div>
 
-          <motion.div variants={itemVariants}>
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 hover:bg-white/15 transition-all duration-300 shadow-lg hover:shadow-xl">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-semibold text-foreground">Cart 2</h2>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button className="text-muted-foreground hover:text-foreground transition-colors">
-                        <Info className="w-5 h-5" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="font-medium">Customer: John Doe</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="cartId" className="text-sm font-medium text-foreground mb-2 block">
+                  Cart ID <span className="text-red-400">*</span>
+                </label>
+                <Input
+                  id="cartId"
+                  type="text"
+                  placeholder="e.g., 50656685-567c-42c9-9a1e-9389e9f76b68"
+                  value={customCartId}
+                  onChange={(e) => setCustomCartId(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleViewCart()}
+                  className="bg-white/10 border-white/20 text-foreground placeholder:text-muted-foreground focus:border-primary"
+                />
               </div>
+
+              <div>
+                <label htmlFor="customerId" className="text-sm font-medium text-foreground mb-2 block">
+                  Customer ID <span className="text-muted-foreground text-xs">(Optional - defaults to 3)</span>
+                </label>
+                <Input
+                  id="customerId"
+                  type="text"
+                  placeholder="e.g., 3"
+                  value={customerId}
+                  onChange={(e) => setCustomerId(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleViewCart()}
+                  className="bg-white/10 border-white/20 text-foreground placeholder:text-muted-foreground focus:border-primary"
+                />
+              </div>
+
               <Button
                 variant="hero"
                 size="lg"
-                onClick={() => navigate("/cart/2")}
+                onClick={handleViewCart}
+                disabled={!customCartId.trim()}
                 className="w-full"
               >
+                <ShoppingCart className="w-5 h-5 mr-2" />
                 View Cart
               </Button>
+
+              <div className="pt-4 border-t border-white/10">
+                <p className="text-xs text-muted-foreground mb-2">Quick Example:</p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setCustomCartId("50656685-567c-42c9-9a1e-9389e9f76b68");
+                    setCustomerId("3");
+                  }}
+                  className="text-xs text-muted-foreground hover:text-foreground w-full"
+                >
+                  Use example cart ID & customer ID
+                </Button>
+              </div>
             </div>
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
 
         <motion.div variants={itemVariants} className="mt-8 text-center">
           <Button

@@ -1,8 +1,13 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import connectDB from './server/db/connection.js';
+import userRoutes from './server/routes/userRoutes.js';
 
 dotenv.config();
+
+// Connect to MongoDB
+connectDB();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -13,6 +18,9 @@ app.use(express.json());
 // BigCommerce API configuration
 const BIGCOMMERCE_API_URL = process.env.BIGCOMMERCE_API_URL;
 const BIGCOMMERCE_TOKEN = process.env.BIGCOMMERCE_TOKEN;
+
+// API Routes
+app.use('/api/users', userRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

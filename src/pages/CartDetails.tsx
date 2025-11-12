@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getCartDetails } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,8 @@ import PromotionCards from "@/components/PromotionCards";
 const CartDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const customerId = searchParams.get("customerId") || "3"; // Default to 3 if not provided
 
   const { data: cart, isLoading, error } = useQuery({
     queryKey: ["cart", id],
@@ -194,7 +196,7 @@ const CartDetails = () => {
           className="mt-8"
         >
           <h2 className="text-2xl font-bold text-foreground mb-6">Special Offers</h2>
-          <PromotionCards />
+          <PromotionCards cartId={cart?.id} customerId={customerId} cartTotal={total} />
         </motion.div>
       </motion.div>
     </div>
