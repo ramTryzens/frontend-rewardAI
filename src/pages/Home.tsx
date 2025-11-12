@@ -1,10 +1,12 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { ShoppingCart, Settings } from "lucide-react";
+import { useUser } from "@clerk/clerk-react";
+import { ShoppingCart, LogIn, UserPlus, Settings } from "lucide-react";
 
 const Home = () => {
   const navigate = useNavigate();
+  const { isSignedIn, isLoaded } = useUser();
 
   return (
     <div className="min-h-screen bg-gradient-bg flex items-center justify-center p-4">
@@ -61,15 +63,40 @@ const Home = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
+          className="flex flex-col sm:flex-row gap-4 justify-center"
         >
-          <Button
-            variant="hero"
-            size="lg"
-            onClick={() => navigate("/select-cart")}
-            className="font-semibold"
-          >
-            Get Started
-          </Button>
+          {isLoaded && isSignedIn ? (
+            <Button
+              variant="hero"
+              size="lg"
+              onClick={() => navigate("/dashboard")}
+              className="font-semibold"
+            >
+              <ShoppingCart className="w-5 h-5 mr-2" />
+              Go to Dashboard
+            </Button>
+          ) : (
+            <>
+              <Button
+                variant="hero"
+                size="lg"
+                onClick={() => navigate("/sign-in")}
+                className="font-semibold"
+              >
+                <LogIn className="w-5 h-5 mr-2" />
+                Sign In
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => navigate("/sign-up")}
+                className="font-semibold bg-white/5 border-white/20 hover:bg-white/10"
+              >
+                <UserPlus className="w-5 h-5 mr-2" />
+                Sign Up
+              </Button>
+            </>
+          )}
         </motion.div>
       </motion.div>
     </div>
