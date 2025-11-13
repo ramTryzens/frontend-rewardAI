@@ -25,9 +25,11 @@ interface PromotionCardsProps {
   cartId?: string;
   customerId?: string | number;
   cartTotal?: number;
+  merchantId?: string;
+  storeId?: string;
 }
 
-const PromotionCards = ({ cartId, customerId, cartTotal = 0 }: PromotionCardsProps) => {
+const PromotionCards = ({ cartId, customerId, cartTotal = 0, merchantId, storeId }: PromotionCardsProps) => {
   const [smartOffers, setSmartOffers] = useState<SmartOffer[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,7 +108,9 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 0 }: PromotionCardsPro
           },
           body: JSON.stringify({
             customerId: customerId || 3,
-            cartId: cartId || "50656685-567c-42c9-9a1e-9389e9f76b68"
+            cartId: cartId || "50656685-567c-42c9-9a1e-9389e9f76b68",
+            merchantId: merchantId || "",
+            storeId: storeId || ""
           })
         });
 
@@ -144,7 +148,7 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 0 }: PromotionCardsPro
     };
 
     fetchSmartOffers();
-  }, [cartId, customerId]);
+  }, [cartId, customerId, merchantId, storeId]);
 
   const promotions = [
     {

@@ -13,12 +13,17 @@ const CartDetails = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const customerId = searchParams.get("customerId") || "3"; // Default to 3 if not provided
+  const merchantId = searchParams.get("merchantId") || "";
+  const storeId = searchParams.get("storeId") || "";
 
   const { data: cart, isLoading, error } = useQuery({
     queryKey: ["cart", id],
     queryFn: () => getCartDetails(id!),
     enabled: !!id,
   });
+
+  // Log the merchant and store IDs for debugging
+  console.log("Cart Details - Merchant ID:", merchantId, "Store ID:", storeId);
 
   if (isLoading) {
     return (
@@ -200,7 +205,13 @@ const CartDetails = () => {
           className="mt-8"
         >
           <h2 className="text-2xl font-bold text-foreground mb-6">Special Offers</h2>
-          <PromotionCards cartId={cart?.id} customerId={customerId} cartTotal={total} />
+          <PromotionCards
+            cartId={cart?.id}
+            customerId={customerId}
+            cartTotal={total}
+            merchantId={merchantId}
+            storeId={storeId}
+          />
         </motion.div>
       </motion.div>
     </div>

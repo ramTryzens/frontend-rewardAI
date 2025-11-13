@@ -194,6 +194,7 @@ export async function getMerchants(): Promise<Merchant[]> {
   const res = await fetch(`${API_BASE_URL}/merchants`);
   if (!res.ok) throw new Error('Failed to fetch merchants');
   const response = await res.json();
+  console.log("🚀 ~ getMerchants ~ response:", response)
   return response.data;
 }
 
