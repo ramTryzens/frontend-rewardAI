@@ -37,6 +37,7 @@ const RulesTab = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<Rule | null>(null);
   const [formData, setFormData] = useState({
+    id: 0,
     key: "",
     valueType: "boolean" as "boolean" | "number",
     boolValue: true,
@@ -91,6 +92,7 @@ const RulesTab = () => {
     if (rule) {
       setEditingRule(rule);
       setFormData({
+        id: rule.id,
         key: rule.key,
         valueType: typeof rule.value === "boolean" ? "boolean" : "number",
         boolValue: typeof rule.value === "boolean" ? rule.value : true,
@@ -100,6 +102,7 @@ const RulesTab = () => {
     } else {
       setEditingRule(null);
       setFormData({
+        id: 0,
         key: "",
         valueType: "boolean",
         boolValue: true,
@@ -114,6 +117,7 @@ const RulesTab = () => {
     setIsDialogOpen(false);
     setEditingRule(null);
     setFormData({
+      id: 0,
       key: "",
       valueType: "boolean",
       boolValue: true,
@@ -123,6 +127,11 @@ const RulesTab = () => {
   };
 
   const handleSubmit = () => {
+    if (!editingRule && (!formData.id || formData.id <= 0)) {
+      toast.error("Please enter a valid numeric ID (greater than 0)");
+      return;
+    }
+
     if (!formData.key) {
       toast.error("Please enter a rule key");
       return;
@@ -133,23 +142,38 @@ const RulesTab = () => {
       return;
     }
 
-    const ruleData = {
+    const value = formData.valueType === "boolean" ? formData.boolValue : formData.numValue;
+
+    const ruleData: any = {
       key: formData.key,
-      value:
-        formData.valueType === "boolean" ? formData.boolValue : formData.numValue,
-      description: formData.description || undefined,
+      value: value,
+      enabled: true, // Always set enabled to true
     };
 
+    // Only add description if it's not empty
+    if (formData.description && formData.description.trim()) {
+      ruleData.description = formData.description.trim();
+    }
+
+    // Only include id when creating a new rule
+    if (!editingRule) {
+      ruleData.id = formData.id;
+    }
+
+    console.log('Submitting rule data:', ruleData); // Debug log
+
     if (editingRule) {
-      updateMutation.mutate({ id: editingRule._id, data: ruleData });
+      // Use the numeric id for the update URL path
+      updateMutation.mutate({ id: String(editingRule.id), data: ruleData });
     } else {
       createMutation.mutate(ruleData);
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (rule: Rule) => {
     if (confirm("Are you sure you want to delete this rule?")) {
-      deleteMutation.mutate(id);
+      // Use the numeric id for the delete URL path
+      deleteMutation.mutate(String(rule.id));
     }
   };
 
@@ -180,6 +204,7 @@ const RulesTab = () => {
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-white/5 border-white/10">
+              <TableHead className="text-foreground">ID</TableHead>
               <TableHead className="text-foreground">Rule Key</TableHead>
               <TableHead className="text-foreground">Default Value</TableHead>
               <TableHead className="text-foreground">Type</TableHead>
@@ -190,13 +215,16 @@ const RulesTab = () => {
           <TableBody>
             {rules?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                   No rules found. Create your first rule to get started.
                 </TableCell>
               </TableRow>
             ) : (
               rules?.map((rule) => (
                 <TableRow key={rule._id} className="hover:bg-white/5 border-white/10">
+                  <TableCell className="text-foreground font-medium">
+                    {rule.id}
+                  </TableCell>
                   <TableCell className="font-medium font-mono text-foreground">
                     {rule.key}
                   </TableCell>
@@ -227,7 +255,7 @@ const RulesTab = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(rule._id)}
+                        onClick={() => handleDelete(rule)}
                       >
                         <Trash2 className="w-4 h-4 text-red-400" />
                       </Button>
@@ -255,6 +283,24 @@ const RulesTab = () => {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="rule-id">Rule ID *</Label>
+              <Input
+                id="rule-id"
+                type="number"
+                min="1"
+                value={formData.id}
+                onChange={(e) =>
+                  setFormData({ ...formData, id: parseInt(e.target.value) || 0 })
+                }
+                placeholder="e.g., 1, 2, 3"
+                disabled={!!editingRule}
+              />
+              <p className="text-xs text-muted-foreground">
+                Unique numeric identifier for this rule
+              </p>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="rule-key">Rule Key *</Label>
               <Input
