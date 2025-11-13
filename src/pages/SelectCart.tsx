@@ -10,6 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import Logo from "@/components/Logo";
 
 const SelectCart = () => {
   const navigate = useNavigate();
@@ -48,6 +49,7 @@ const SelectCart = () => {
         animate="visible"
         className="w-full max-w-2xl"
       >
+        <Logo />
         <motion.h1
           variants={itemVariants}
           className="text-4xl md:text-5xl font-bold text-foreground mb-4 text-center"

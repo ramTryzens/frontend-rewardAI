@@ -1,50 +1,29 @@
 import { SignUp } from "@clerk/clerk-react";
 import { motion } from "framer-motion";
-import { UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import Footer from "@/components/Footer";
-import ThemeToggle from "@/components/ThemeToggle";
+import Logo from "@/components/Logo";
 
 const SignUpPage = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-gradient-bg p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-bg p-4 md:p-8 flex flex-col">
+      <div className="max-w-4xl mx-auto flex-grow flex flex-col">
+        {/* Logo */}
+        <Logo />
+
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-8"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="bg-white/10 backdrop-blur-md rounded-full p-3 border border-white/20">
-                <UserPlus className="w-6 h-6 text-foreground" />
-              </div>
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-                  Create Account
-                </h1>
-                <p className="text-muted-foreground mt-1">
-                  Register to get started with AI-powered offers
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <ThemeToggle />
-              <Button
-                variant="ghost"
-                onClick={() => navigate("/")}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                ← Back to Home
-              </Button>
-            </div>
-          </div>
-        </motion.div>
+        <div className="flex justify-end mb-8">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/")}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            ← Back to Home
+          </Button>
+        </div>
 
         {/* Auth Card */}
         <motion.div
@@ -90,7 +69,7 @@ const SignUpPage = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.4 }}
-          className="text-center mt-6 text-sm text-muted-foreground"
+          className="text-center mt-6 text-sm text-muted-foreground mb-auto"
         >
           Join thousands of merchants using AI-powered solutions
         </motion.p>

@@ -1,16 +1,14 @@
-import { motion, useAnimation } from "framer-motion";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
 import { ShoppingCart, LogIn, UserPlus, Sparkles, TrendingUp, Shield, Zap } from "lucide-react";
-import { useEffect } from "react";
 import Footer from "@/components/Footer";
-import ThemeToggle from "@/components/ThemeToggle";
+import Logo from "@/components/Logo";
 
 const Home = () => {
   const navigate = useNavigate();
   const { isSignedIn, isLoaded } = useUser();
-  const controls = useAnimation();
 
   const features = [
     {
@@ -35,30 +33,6 @@ const Home = () => {
     }
   ];
 
-  useEffect(() => {
-    controls.start({
-      rotate: 360,
-      transition: {
-        duration: 20,
-        repeat: Infinity,
-        ease: "linear"
-      }
-    });
-  }, [controls]);
-
-  // Floating animation variants
-  const floatingAnimation = {
-    initial: { y: 0 },
-    animate: {
-      y: [-10, 10, -10],
-      transition: {
-        duration: 3,
-        repeat: Infinity,
-        ease: "easeInOut"
-      }
-    }
-  };
-
   // Glow pulse animation
   const glowAnimation = {
     animate: {
@@ -76,7 +50,7 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-bg p-4 md:p-8 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-bg p-4 md:p-8 relative overflow-hidden flex flex-col">
       {/* Animated floating particles */}
       {[...Array(6)].map((_, i) => (
         <motion.div
@@ -101,47 +75,22 @@ const Home = () => {
         />
       ))}
 
-      <div className="max-w-7xl mx-auto relative z-10">
+      <div className="max-w-7xl mx-auto relative z-10 flex-grow flex flex-col">
+        {/* Logo */}
+        <Logo />
+
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-8"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <motion.div
-                className="bg-white/10 backdrop-blur-md rounded-full p-3 border border-white/20"
-                variants={floatingAnimation}
-                initial="initial"
-                animate="animate"
-              >
-                <ShoppingCart className="w-6 h-6 text-foreground" />
-              </motion.div>
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-                  Reward AI Platform
-                </h1>
-                <p className="text-muted-foreground mt-1">
-                  Intelligent cart management and customer rewards
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <ThemeToggle />
-              {isLoaded && isSignedIn && (
-                <Button
-                  variant="ghost"
-                  onClick={() => navigate("/dashboard")}
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  Go to Dashboard →
-                </Button>
-              )}
-            </div>
+        {isLoaded && isSignedIn && (
+          <div className="flex justify-end mb-8">
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/dashboard")}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              Go to Dashboard →
+            </Button>
           </div>
-        </motion.div>
+        )}
 
         {/* Hero Section */}
         <motion.div
@@ -190,12 +139,9 @@ const Home = () => {
                 variants={glowAnimation}
                 animate="animate"
               >
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                >
+                <div>
                   <ShoppingCart className="w-12 h-12 text-white" />
-                </motion.div>
+                </div>
               </motion.div>
             </motion.div>
 
@@ -266,7 +212,7 @@ const Home = () => {
                       variant="outline"
                       size="lg"
                       onClick={() => navigate("/sign-up")}
-                      className="font-semibold bg-white/5 border-white/20 hover:bg-white/10"
+                      className="font-semibold bg-white/5 dark:bg-white/5 border-foreground/30 dark:border-white/20 hover:bg-white/10 dark:hover:bg-white/10"
                     >
                       <UserPlus className="w-5 h-5 mr-2" />
                       Sign Up
@@ -283,7 +229,7 @@ const Home = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-auto"
         >
           {features.map((feature, index) => {
             const Icon = feature.icon;
@@ -314,10 +260,10 @@ const Home = () => {
                   >
                     <Icon className="w-6 h-6 text-white" />
                   </motion.div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2 group-hover:text-white transition-colors">
+                  <h3 className="text-lg font-semibold text-foreground mb-2 transition-colors">
                     {feature.title}
                   </h3>
-                  <p className="text-muted-foreground text-sm group-hover:text-gray-200 transition-colors">
+                  <p className="text-muted-foreground text-sm transition-colors">
                     {feature.description}
                   </p>
                 </div>
