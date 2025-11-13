@@ -3,31 +3,22 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Shield, Loader2, CheckCircle, XCircle, Users } from "lucide-react";
-
-interface User {
-  _id: string;
-  clerkUserId: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  isAdmin: boolean;
-  isApproved: boolean;
-  createdAt: string;
-  lastLogin: string;
-}
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2 } from "lucide-react";
+import Footer from "@/components/Footer";
+import MerchantsApprovalTab from "@/components/admin/MerchantsApprovalTab";
+import EcommerceTab from "@/components/merchant-admin/EcommerceTab";
+import RulesTab from "@/components/merchant-admin/RulesTab";
+import Logo from "@/components/Logo";
 
 const Admin = () => {
   const { user, isLoaded } = useUser();
   const navigate = useNavigate();
-  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("merchants");
 
   useEffect(() => {
-    const checkAdminAndFetchUsers = async () => {
+    const checkAdminStatus = async () => {
       if (!isLoaded || !user) return;
 
       try {
@@ -41,58 +32,16 @@ const Admin = () => {
             navigate('/dashboard');
             return;
           }
-
-          // Fetch all users
-          fetchUsers();
         }
       } catch (error) {
         console.error('Error checking admin status:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    checkAdminAndFetchUsers();
+    checkAdminStatus();
   }, [user, isLoaded, navigate]);
-
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('http://localhost:3001/api/users');
-
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(data);
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const toggleApproval = async (userId: string, currentStatus: boolean) => {
-    try {
-      setUpdatingUserId(userId);
-
-      const response = await fetch(`http://localhost:3001/api/users/${userId}/approve`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          isApproved: !currentStatus,
-        }),
-      });
-
-      if (response.ok) {
-        // Refresh users list
-        fetchUsers();
-      }
-    } catch (error) {
-      console.error('Error updating user approval:', error);
-    } finally {
-      setUpdatingUserId(null);
-    }
-  };
 
   if (loading || !isLoaded) {
     return (
@@ -103,201 +52,86 @@ const Admin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-bg p-4 py-12">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-bg p-4 md:p-8 flex flex-col">
+      <div className="max-w-7xl mx-auto flex-grow flex flex-col">
+        {/* Logo */}
+        <Logo />
+
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center gap-3"
+        <div className="flex justify-end items-center gap-3 mb-8">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/")}
+            className="text-muted-foreground hover:text-foreground"
           >
-            <Shield className="w-10 h-10 text-primary" />
-            <div>
-              <h1 className="text-4xl font-bold text-foreground">Admin Dashboard</h1>
-              <p className="text-muted-foreground">Manage merchant accounts</p>
-            </div>
-          </motion.div>
-
-          {/* Styled User Button */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
-            className="relative group"
-          >
-            {/* Glow Effect */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-primary via-blue-500 to-primary rounded-full opacity-60 blur-md group-hover:opacity-100 transition-opacity duration-300" />
-
-            {/* Button Container */}
-            <div className="relative bg-background/60 backdrop-blur-xl rounded-full p-1 border border-white/20 shadow-lg">
-              <UserButton
-                afterSignOutUrl="/sign-in"
-                appearance={{
-                  elements: {
-                    avatarBox: "w-10 h-10",
-                    userButtonPopoverCard: "bg-white/90 backdrop-blur-xl border border-gray-200 shadow-2xl",
-                    userButtonPopoverActionButton: "hover:bg-gray-100 text-gray-900 transition-colors",
-                    userButtonPopoverActionButtonText: "text-gray-900 font-medium",
-                    userButtonPopoverActionButtonIcon: "text-primary",
-                    userButtonPopoverFooter: "hidden",
-                    userPreviewMainIdentifier: "text-gray-900 font-semibold",
-                    userPreviewSecondaryIdentifier: "text-gray-600",
-                  },
-                }}
-              />
-            </div>
-          </motion.div>
+            ← Back to Home
+          </Button>
+          <div className="relative bg-background/60 backdrop-blur-xl rounded-full p-1 border border-white/20 shadow-lg">
+            <UserButton
+              afterSignOutUrl="/sign-in"
+              appearance={{
+                elements: {
+                  avatarBox: "w-10 h-10",
+                  userButtonPopoverCard: "bg-white/90 backdrop-blur-xl border border-gray-200 shadow-2xl",
+                  userButtonPopoverActionButton: "hover:bg-gray-100 text-gray-900 transition-colors",
+                  userButtonPopoverActionButtonText: "text-gray-900 font-medium",
+                  userButtonPopoverActionButtonIcon: "text-primary",
+                  userButtonPopoverFooter: "hidden",
+                  userPreviewMainIdentifier: "text-gray-900 font-semibold",
+                  userPreviewSecondaryIdentifier: "text-gray-600",
+                },
+              }}
+            />
+          </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20"
-          >
-            <div className="flex items-center gap-3">
-              <Users className="w-8 h-8 text-blue-400" />
-              <div>
-                <p className="text-sm text-muted-foreground">Total Merchants</p>
-                <p className="text-3xl font-bold text-foreground">{users.length}</p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20"
-          >
-            <div className="flex items-center gap-3">
-              <CheckCircle className="w-8 h-8 text-green-400" />
-              <div>
-                <p className="text-sm text-muted-foreground">Approved</p>
-                <p className="text-3xl font-bold text-foreground">
-                  {users.filter(u => u.isApproved).length}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20"
-          >
-            <div className="flex items-center gap-3">
-              <XCircle className="w-8 h-8 text-orange-400" />
-              <div>
-                <p className="text-sm text-muted-foreground">Pending</p>
-                <p className="text-3xl font-bold text-foreground">
-                  {users.filter(u => !u.isApproved).length}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Merchants Table */}
+        {/* Tabs */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 overflow-hidden shadow-2xl"
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 shadow-xl overflow-hidden mb-auto"
         >
-          <div className="bg-gradient-primary p-6">
-            <h2 className="text-2xl font-bold text-primary-foreground">Merchants</h2>
-            <p className="text-primary-foreground/80">Manage merchant access and approvals</p>
-          </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="w-full justify-start bg-white/5 border-b border-white/10 rounded-none p-0">
+              <TabsTrigger
+                value="merchants"
+                className="flex-1 md:flex-none data-[state=active]:bg-white/10 data-[state=active]:text-foreground rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+              >
+                Merchants
+              </TabsTrigger>
+              <TabsTrigger
+                value="ecommerce"
+                className="flex-1 md:flex-none data-[state=active]:bg-white/10 data-[state=active]:text-foreground rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+              >
+                Ecommerce Platforms
+              </TabsTrigger>
+              <TabsTrigger
+                value="rules"
+                className="flex-1 md:flex-none data-[state=active]:bg-white/10 data-[state=active]:text-foreground rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+              >
+                Business Rules
+              </TabsTrigger>
+            </TabsList>
 
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-white/10 hover:bg-white/5">
-                  <TableHead className="text-purple-300 font-semibold">Name</TableHead>
-                  <TableHead className="text-purple-300 font-semibold">Email</TableHead>
-                  <TableHead className="text-purple-300 font-semibold">Role</TableHead>
-                  <TableHead className="text-purple-300 font-semibold">Status</TableHead>
-                  <TableHead className="text-purple-300 font-semibold">Registered</TableHead>
-                  <TableHead className="text-purple-300 font-semibold">Last Login</TableHead>
-                  <TableHead className="text-purple-300 font-semibold">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((merchant) => (
-                  <TableRow key={merchant._id} className="border-white/10 hover:bg-white/5">
-                    <TableCell className="text-foreground font-medium">
-                      {merchant.firstName} {merchant.lastName}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{merchant.email}</TableCell>
-                    <TableCell>
-                      {merchant.isAdmin ? (
-                        <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30">
-                          <Shield className="w-3 h-3 mr-1" />
-                          Admin
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30">
-                          Merchant
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {merchant.isApproved ? (
-                        <Badge className="bg-green-500/20 text-green-300 border-green-500/30">
-                          <CheckCircle className="w-3 h-3 mr-1" />
-                          Approved
-                        </Badge>
-                      ) : (
-                        <Badge className="bg-orange-500/20 text-orange-300 border-orange-500/30">
-                          <XCircle className="w-3 h-3 mr-1" />
-                          Pending
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {new Date(merchant.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {merchant.lastLogin
-                        ? new Date(merchant.lastLogin).toLocaleDateString()
-                        : 'Never'}
-                    </TableCell>
-                    <TableCell>
-                      {!merchant.isAdmin && (
-                        <Button
-                          variant={merchant.isApproved ? "destructive" : "default"}
-                          size="sm"
-                          onClick={() => toggleApproval(merchant._id, merchant.isApproved)}
-                          disabled={updatingUserId === merchant._id}
-                          className={merchant.isApproved ? "" : "bg-green-600 hover:bg-green-700"}
-                        >
-                          {updatingUserId === merchant._id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : merchant.isApproved ? (
-                            'Revoke'
-                          ) : (
-                            'Approve'
-                          )}
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+            <div className="p-6">
+              <TabsContent value="merchants" className="mt-0">
+                <MerchantsApprovalTab />
+              </TabsContent>
 
-          {users.length === 0 && (
-            <div className="p-12 text-center text-muted-foreground">
-              No merchants registered yet
+              <TabsContent value="ecommerce" className="mt-0">
+                <EcommerceTab />
+              </TabsContent>
+
+              <TabsContent value="rules" className="mt-0">
+                <RulesTab />
+              </TabsContent>
             </div>
-          )}
+          </Tabs>
         </motion.div>
+
+        {/* Footer */}
+        <Footer />
       </div>
     </div>
   );

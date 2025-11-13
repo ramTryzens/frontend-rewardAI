@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Store, Loader2, ShoppingCart } from "lucide-react";
+import Logo from "@/components/Logo";
 
 const MerchantOnboarding = () => {
   const { user, isLoaded } = useUser();
@@ -50,6 +51,9 @@ const MerchantOnboarding = () => {
   return (
     <div className="min-h-screen bg-gradient-bg p-4 py-12">
       <div className="max-w-4xl mx-auto">
+        {/* Logo */}
+        <Logo />
+
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <motion.h1

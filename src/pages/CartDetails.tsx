@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ShoppingCart, Package, DollarSign, User, ArrowLeft, AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import PromotionCards from "@/components/PromotionCards";
+import Logo from "@/components/Logo";
 
 const CartDetails = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +28,7 @@ const CartDetails = () => {
           animate={{ opacity: 1, scale: 1 }}
           className="w-full max-w-4xl"
         >
+          <Logo />
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
             <Skeleton className="h-10 w-48 mb-6 bg-white/20" />
             <div className="space-y-4">
@@ -48,6 +50,7 @@ const CartDetails = () => {
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-2xl text-center"
         >
+          <Logo />
           <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
             <AlertCircle className="w-16 h-16 text-destructive mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-foreground mb-4">Error Loading Cart</h2>
@@ -78,6 +81,7 @@ const CartDetails = () => {
         transition={{ duration: 0.5 }}
         className="max-w-4xl mx-auto"
       >
+        <Logo />
         <Button
           variant="ghost"
           onClick={() => navigate("/select-cart")}

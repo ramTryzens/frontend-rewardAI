@@ -18,6 +18,15 @@ const ruleEntrySchema = new mongoose.Schema(
       trim: true,
       uppercase: true,
     },
+    value: {
+      type: mongoose.Schema.Types.Mixed, // Can be boolean or number
+      required: false,
+    },
+    description: {
+      type: String,
+      trim: true,
+      required: false,
+    },
     enabled: {
       type: Boolean,
       default: true,

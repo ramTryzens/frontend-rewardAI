@@ -113,6 +113,7 @@ export async function deleteEcommerceDetail(id: string): Promise<void> {
 
 export interface Rule {
   _id: string;
+  id: number;
   key: string;
   enabled: boolean;
   value?: boolean | number;

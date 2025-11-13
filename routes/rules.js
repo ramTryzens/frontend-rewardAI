@@ -41,7 +41,7 @@ router.get('/', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const { id, key, enabled } = req.body;
+    const { id, key, value, description, enabled } = req.body;
 
     // Validate required fields
     if (id === undefined || id === null || !key) {
@@ -75,6 +75,8 @@ router.post('/', async (req, res) => {
     const newRule = new RuleEntry({
       id,
       key,
+      value: value !== undefined ? value : undefined,
+      description: description || undefined,
       enabled: enabled !== undefined ? enabled : true,
     });
 
@@ -117,7 +119,7 @@ router.post('/', async (req, res) => {
 /**
  * PATCH /api/rules/:id
  * Update a specific rule entry by its numeric id
- * Allows updating: key and enabled
+ * Allows updating: key, value, description, and enabled
  */
 router.patch('/:id', async (req, res) => {
   try {
@@ -134,7 +136,7 @@ router.patch('/:id', async (req, res) => {
     }
 
     // Define allowed fields for update
-    const allowedFields = ['key', 'enabled'];
+    const allowedFields = ['key', 'value', 'description', 'enabled'];
     const updateData = {};
 
     // Extract only allowed fields from request body
