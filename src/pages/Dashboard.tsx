@@ -1,8 +1,11 @@
-import { useUser } from "@clerk/clerk-react";
+import { useUser, UserButton } from "@clerk/clerk-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShoppingCart, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import Footer from "@/components/Footer";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const Dashboard = () => {
   const { user, isLoaded } = useUser();
@@ -60,7 +63,7 @@ const Dashboard = () => {
         if (dbUser.isAdmin) {
           navigate('/admin');
         } else if (dbUser.isApproved) {
-          navigate('/merchant-onboarding');
+          navigate('/merchant-admin');
         } else {
           // User is not approved yet
           setError('Your account is pending approval. Please wait for admin approval.');
@@ -93,38 +96,126 @@ const Dashboard = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-bg flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-2xl"
-        >
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20 text-center">
-            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-6 mb-6">
-              <h2 className="text-2xl font-bold text-foreground mb-4">
-                Account Pending Approval
-              </h2>
-              <p className="text-muted-foreground mb-2">
-                {error}
-              </p>
-              <p className="text-sm text-muted-foreground mt-4">
-                You will receive an email once your account has been approved by an administrator.
-              </p>
-            </div>
-
-            {userData && (
-              <div className="bg-white/5 rounded-lg p-4 text-left">
-                <h3 className="text-sm font-semibold text-foreground mb-2">Your Account Details:</h3>
-                <div className="space-y-1 text-sm text-muted-foreground">
-                  <p>Name: {userData.firstName} {userData.lastName}</p>
-                  <p>Email: {userData.email}</p>
-                  <p>Status: Pending Approval</p>
-                  <p>Registered: {new Date(userData.createdAt).toLocaleDateString()}</p>
+      <div className="min-h-screen bg-gradient-bg p-4 md:p-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="mb-8"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="bg-white/10 backdrop-blur-md rounded-full p-3 border border-white/20">
+                  <ShoppingCart className="w-6 h-6 text-foreground" />
+                </div>
+                <div>
+                  <h1 className="text-3xl md:text-4xl font-bold text-foreground">
+                    Reward AI Platform
+                  </h1>
+                  <p className="text-muted-foreground mt-1">
+                    Dashboard - Account Status
+                  </p>
                 </div>
               </div>
-            )}
-          </div>
-        </motion.div>
+              <div className="flex items-center gap-3">
+                <ThemeToggle />
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate("/")}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  ← Back to Home
+                </Button>
+                <div className="relative bg-background/60 backdrop-blur-xl rounded-full p-1 border border-white/20 shadow-lg">
+                  <UserButton
+                    afterSignOutUrl="/sign-in"
+                    appearance={{
+                      elements: {
+                        avatarBox: "w-10 h-10",
+                        userButtonPopoverCard: "bg-white/90 backdrop-blur-xl border border-gray-200 shadow-2xl",
+                        userButtonPopoverActionButton: "hover:bg-gray-100 text-gray-900 transition-colors",
+                        userButtonPopoverActionButtonText: "text-gray-900 font-medium",
+                        userButtonPopoverActionButtonIcon: "text-primary",
+                        userButtonPopoverFooter: "hidden",
+                        userPreviewMainIdentifier: "text-gray-900 font-semibold",
+                        userPreviewSecondaryIdentifier: "text-gray-600",
+                      },
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Pending Approval Content */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="flex items-center justify-center"
+          >
+            <div className="w-full max-w-2xl">
+              <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
+                <div className="flex items-center justify-center mb-6">
+                  <div className="bg-yellow-500/20 backdrop-blur-md rounded-full p-4 border border-yellow-500/30">
+                    <Clock className="w-12 h-12 text-yellow-400" />
+                  </div>
+                </div>
+
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+                    Account Pending Approval
+                  </h2>
+                  <p className="text-muted-foreground mb-2 text-lg">
+                    {error}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-4">
+                    You will receive an email once your account has been approved by an administrator.
+                  </p>
+                </div>
+
+                {userData && (
+                  <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 border border-white/20 mb-6">
+                    <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                      <ShoppingCart className="w-4 h-4" />
+                      Your Account Details
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center py-2 border-b border-white/10">
+                        <span className="text-sm text-muted-foreground">Name</span>
+                        <span className="text-sm font-medium text-foreground">
+                          {userData.firstName} {userData.lastName}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-white/10">
+                        <span className="text-sm text-muted-foreground">Email</span>
+                        <span className="text-sm font-medium text-foreground">{userData.email}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-white/10">
+                        <span className="text-sm text-muted-foreground">Status</span>
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-yellow-500/20 text-yellow-300 text-xs font-medium border border-yellow-500/30">
+                          <Clock className="w-3 h-3" />
+                          Pending Approval
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center py-2">
+                        <span className="text-sm text-muted-foreground">Registered</span>
+                        <span className="text-sm font-medium text-foreground">
+                          {new Date(userData.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Footer */}
+          <Footer />
+        </div>
       </div>
     );
   }

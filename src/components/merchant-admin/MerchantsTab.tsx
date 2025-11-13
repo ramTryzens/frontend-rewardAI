@@ -324,7 +324,7 @@ const MerchantsTab = () => {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">My Store Configurations</h2>
+          <h2 className="text-2xl font-bold text-foreground">Store Configurations</h2>
           <p className="text-sm text-muted-foreground">
             Manage your store configurations with platform credentials and business rules
           </p>
