@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 /**
  * Ecommerce Detail Schema
- * Stores e-commerce platform configurations including API endpoints
+ * Stores e-commerce platform configurations including API endpoints and required credentials
  */
 const ecommerceDetailSchema = new mongoose.Schema(
   {
@@ -32,6 +32,34 @@ const ecommerceDetailSchema = new mongoose.Schema(
       },
       default: {},
     },
+    required_credentials: [
+      {
+        key: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        label: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        description: {
+          type: String,
+          trim: true,
+        },
+        type: {
+          type: String,
+          enum: ['text', 'password', 'url'],
+          default: 'text',
+        },
+        required: {
+          type: Boolean,
+          default: true,
+        },
+        _id: false, // Disable auto-generation of _id for subdocuments
+      },
+    ],
     enabled: {
       type: Boolean,
       default: true,

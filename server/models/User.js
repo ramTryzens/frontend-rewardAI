@@ -49,6 +49,11 @@ const userSchema = new mongoose.Schema(
         zipCode: String,
         country: String,
       },
+      ecommercePlatform: {
+        platformId: mongoose.Schema.Types.ObjectId,
+        platformName: String,
+        credentials: mongoose.Schema.Types.Mixed, // Dynamic object to store platform-specific credentials
+      },
     },
     lastLogin: {
       type: Date,

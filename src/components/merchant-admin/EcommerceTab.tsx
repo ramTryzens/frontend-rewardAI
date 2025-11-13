@@ -36,6 +36,7 @@ import {
   updateEcommerceDetail,
   deleteEcommerceDetail,
   type EcommerceDetail,
+  type CredentialField,
 } from "@/lib/api";
 
 type ApiUrlEntry = {
@@ -55,6 +56,7 @@ const EcommerceTab = () => {
     api_version: "",
     enabled: true,
     api_urls: [] as ApiUrlEntry[],
+    required_credentials: [] as CredentialField[],
   });
 
   // Fetch data
@@ -117,6 +119,7 @@ const EcommerceTab = () => {
         api_version: platform.api_version,
         enabled: platform.enabled,
         api_urls: apiUrlsArray,
+        required_credentials: platform.required_credentials || [],
       });
     } else {
       setEditingPlatform(null);
@@ -125,6 +128,7 @@ const EcommerceTab = () => {
         api_version: "",
         enabled: true,
         api_urls: [],
+        required_credentials: [],
       });
     }
     setIsDialogOpen(true);
@@ -138,6 +142,7 @@ const EcommerceTab = () => {
       api_version: "",
       enabled: true,
       api_urls: [],
+      required_credentials: [],
     });
   };
 
@@ -168,6 +173,33 @@ const EcommerceTab = () => {
     setFormData({ ...formData, api_urls: newApiUrls });
   };
 
+  const handleAddCredential = () => {
+    setFormData({
+      ...formData,
+      required_credentials: [
+        ...formData.required_credentials,
+        { key: "", label: "", description: "", type: "text", required: true },
+      ],
+    });
+  };
+
+  const handleRemoveCredential = (index: number) => {
+    setFormData({
+      ...formData,
+      required_credentials: formData.required_credentials.filter((_, i) => i !== index),
+    });
+  };
+
+  const handleCredentialChange = (
+    index: number,
+    field: keyof CredentialField,
+    value: string | boolean
+  ) => {
+    const newCredentials = [...formData.required_credentials];
+    newCredentials[index] = { ...newCredentials[index], [field]: value };
+    setFormData({ ...formData, required_credentials: newCredentials });
+  };
+
   const handleSubmit = () => {
     if (!formData.name || !formData.api_version) {
       toast.error("Please fill in all required fields");
@@ -182,6 +214,14 @@ const EcommerceTab = () => {
       }
     }
 
+    // Validate credentials if any
+    for (const credential of formData.required_credentials) {
+      if (!credential.key || !credential.label) {
+        toast.error("Please fill in all credential fields (key and label are required) or remove empty entries");
+        return;
+      }
+    }
+
     // Convert api_urls array back to object format
     const apiUrlsObject = formData.api_urls.reduce((acc, url) => {
       acc[url.name] = {
@@ -191,12 +231,24 @@ const EcommerceTab = () => {
       return acc;
     }, {} as Record<string, { endpoint: string; method: string }>);
 
+    // Clean credentials - remove any _id fields that might exist
+    const cleanedCredentials = formData.required_credentials.map(({ key, label, description, type, required }) => ({
+      key,
+      label,
+      description,
+      type,
+      required,
+    }));
+
     const platformData = {
       name: formData.name,
       api_version: formData.api_version,
       enabled: formData.enabled,
       api_urls: Object.keys(apiUrlsObject).length > 0 ? apiUrlsObject : undefined,
+      required_credentials: cleanedCredentials, // Always send the array, even if empty
     };
+
+    console.log('Submitting platform data:', platformData);
 
     if (editingPlatform) {
       updateMutation.mutate({ id: editingPlatform._id, data: platformData });
@@ -249,7 +301,7 @@ const EcommerceTab = () => {
             <TableRow className="hover:bg-white/5 border-white/10">
               <TableHead className="text-foreground">Platform Name</TableHead>
               <TableHead className="text-foreground">API Version</TableHead>
-              <TableHead className="text-foreground">API Endpoints</TableHead>
+              <TableHead className="text-foreground">Credentials</TableHead>
               <TableHead className="text-foreground">Status</TableHead>
               <TableHead className="text-foreground">Created</TableHead>
               <TableHead className="text-foreground text-right">Actions</TableHead>
@@ -275,27 +327,27 @@ const EcommerceTab = () => {
                     {platform.api_version}
                   </TableCell>
                   <TableCell className="text-foreground">
-                    {platform.api_urls && Object.keys(platform.api_urls).length > 0 ? (
+                    {platform.required_credentials && platform.required_credentials.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
-                        {Object.entries(platform.api_urls)
+                        {platform.required_credentials
                           .slice(0, 2)
-                          .map(([name, config]) => (
+                          .map((cred, idx) => (
                             <span
-                              key={name}
-                              className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded"
+                              key={idx}
+                              className="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded"
                             >
-                              {name} ({config.method})
+                              {cred.label}
                             </span>
                           ))}
-                        {Object.keys(platform.api_urls).length > 2 && (
+                        {platform.required_credentials.length > 2 && (
                           <span className="text-xs text-muted-foreground">
-                            +{Object.keys(platform.api_urls).length - 2} more
+                            +{platform.required_credentials.length - 2} more
                           </span>
                         )}
                       </div>
                     ) : (
                       <span className="text-muted-foreground italic text-xs">
-                        No endpoints
+                        No credentials
                       </span>
                     )}
                   </TableCell>
@@ -486,6 +538,128 @@ const EcommerceTab = () => {
               {formData.api_urls.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground text-sm border border-white/10 rounded-lg border-dashed">
                   No API endpoints defined. Click "Add Endpoint" to add one.
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Required Credentials (Optional)</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Define credentials that merchants need to provide when setting up this platform
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddCredential}
+                  className="gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Credential
+                </Button>
+              </div>
+
+              {formData.required_credentials.length > 0 && (
+                <div className="space-y-3 border border-white/10 rounded-lg p-4 max-h-96 overflow-y-auto">
+                  {formData.required_credentials.map((credential, index) => (
+                    <div
+                      key={index}
+                      className="space-y-2 p-3 bg-white/5 rounded-lg relative"
+                    >
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveCredential(index)}
+                        className="absolute top-2 right-2 h-6 w-6 p-0"
+                      >
+                        <X className="w-4 h-4 text-red-400" />
+                      </Button>
+
+                      <div className="space-y-2 pr-8">
+                        <div>
+                          <Label className="text-xs">Credential Key *</Label>
+                          <Input
+                            value={credential.key}
+                            onChange={(e) =>
+                              handleCredentialChange(index, "key", e.target.value)
+                            }
+                            placeholder="e.g., storeHash, accessToken, apiKey"
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <Label className="text-xs">Label *</Label>
+                          <Input
+                            value={credential.label}
+                            onChange={(e) =>
+                              handleCredentialChange(index, "label", e.target.value)
+                            }
+                            placeholder="e.g., Store Hash, Access Token, API Key"
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div>
+                          <Label className="text-xs">Description</Label>
+                          <Input
+                            value={credential.description || ""}
+                            onChange={(e) =>
+                              handleCredentialChange(index, "description", e.target.value)
+                            }
+                            placeholder="e.g., Your BigCommerce store hash from the URL"
+                            className="mt-1"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-xs">Field Type</Label>
+                            <Select
+                              value={credential.type}
+                              onValueChange={(value) =>
+                                handleCredentialChange(index, "type", value)
+                              }
+                            >
+                              <SelectTrigger className="mt-1">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="text">Text</SelectItem>
+                                <SelectItem value="password">Password</SelectItem>
+                                <SelectItem value="url">URL</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="flex items-end">
+                            <div className="flex items-center space-x-2 pb-2">
+                              <Switch
+                                id={`required-${index}`}
+                                checked={credential.required}
+                                onCheckedChange={(checked) =>
+                                  handleCredentialChange(index, "required", checked)
+                                }
+                              />
+                              <Label htmlFor={`required-${index}`} className="text-xs">
+                                Required
+                              </Label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {formData.required_credentials.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground text-sm border border-white/10 rounded-lg border-dashed">
+                  No credentials defined. Click "Add Credential" to add one.
                 </div>
               )}
             </div>

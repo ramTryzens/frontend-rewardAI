@@ -42,7 +42,7 @@ router.get('/', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const { name, api_version, api_urls, enabled } = req.body;
+    const { name, api_version, api_urls, required_credentials, enabled } = req.body;
 
     // Validate required fields
     if (!name || !api_version) {
@@ -76,11 +76,33 @@ router.post('/', async (req, res) => {
       }
     }
 
+    // Validate required_credentials structure if provided
+    if (required_credentials) {
+      if (!Array.isArray(required_credentials)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid required_credentials format',
+          message: 'required_credentials must be an array',
+        });
+      }
+
+      for (const credential of required_credentials) {
+        if (!credential.key || !credential.label) {
+          return res.status(400).json({
+            success: false,
+            error: 'Invalid credential format',
+            message: 'Each credential must have "key" and "label" properties',
+          });
+        }
+      }
+    }
+
     // Create new ecommerce detail
     const newDetail = new EcommerceDetail({
       name,
       api_version,
       api_urls: api_urls || {},
+      required_credentials: required_credentials || [],
       enabled: enabled !== undefined ? enabled : true,
     });
 
@@ -139,7 +161,7 @@ router.patch('/:id', async (req, res) => {
     }
 
     // Define allowed fields for update
-    const allowedFields = ['name', 'api_version', 'api_urls', 'enabled'];
+    const allowedFields = ['name', 'api_version', 'api_urls', 'required_credentials', 'enabled'];
     const updateData = {};
 
     // Extract only allowed fields from request body
@@ -184,6 +206,33 @@ router.patch('/:id', async (req, res) => {
       }
     }
 
+    // Validate required_credentials structure if provided
+    if (updateData.hasOwnProperty('required_credentials')) {
+      if (updateData.required_credentials === null || updateData.required_credentials === undefined) {
+        // Allow clearing credentials by setting to empty array
+        updateData.required_credentials = [];
+      } else if (!Array.isArray(updateData.required_credentials)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid required_credentials format',
+          message: 'required_credentials must be an array',
+        });
+      } else {
+        // Validate each credential
+        for (const credential of updateData.required_credentials) {
+          if (!credential.key || !credential.label) {
+            return res.status(400).json({
+              success: false,
+              error: 'Invalid credential format',
+              message: 'Each credential must have "key" and "label" properties',
+            });
+          }
+        }
+      }
+    }
+
+    console.log('Updating ecommerce detail with data:', JSON.stringify(updateData, null, 2));
+
     // Update the document
     const updatedDetail = await EcommerceDetail.findByIdAndUpdate(
       id,
@@ -193,6 +242,8 @@ router.patch('/:id', async (req, res) => {
         runValidators: true, // Run schema validators
       }
     );
+
+    console.log('Updated detail:', JSON.stringify(updatedDetail, null, 2));
 
     if (!updatedDetail) {
       return res.status(404).json({

@@ -28,77 +28,197 @@ router.get('/', async (req, res) => {
 });
 
 /**
+ * GET /api/merchants/by-user/:userId
+ * Retrieve merchant by userId (Clerk user ID)
+ */
+router.get('/by-user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing userId',
+        message: 'userId parameter is required',
+      });
+    }
+
+    const merchant = await Merchant.findOne({ userId }).sort({ createdAt: -1 });
+
+    if (!merchant) {
+      return res.status(404).json({
+        success: false,
+        error: 'Merchant not found',
+        message: `No merchant found for user ID: ${userId}`,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: merchant,
+    });
+  } catch (error) {
+    console.error('Error fetching merchant by userId:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch merchant',
+      message: error.message,
+    });
+  }
+});
+
+/**
  * POST /api/merchants
  * Create a new merchant with validation
  */
 router.post('/', async (req, res) => {
   try {
-    const { name, ecomDetails, businessRules } = req.body;
+    console.log('=== POST /api/merchants ===');
+    console.log('Received POST request body:', JSON.stringify(req.body, null, 2));
+    console.log('Request body keys:', Object.keys(req.body));
+
+    const { userId, businessName, email, name, stores } = req.body;
+
+    console.log('Extracted values:');
+    console.log('  userId:', userId);
+    console.log('  businessName:', businessName);
+    console.log('  email:', email);
+    console.log('  name:', name);
+    console.log('  stores:', stores ? `Array(${stores.length})` : 'undefined');
 
     // Validate required fields
-    if (!name) {
+    if (!userId) {
+      console.log('Validation failed: userId is missing');
       return res.status(400).json({
         success: false,
         error: 'Missing required field',
-        message: 'Merchant name is required',
+        message: 'User ID is required',
       });
     }
 
-    if (!ecomDetails || !ecomDetails.platform || !ecomDetails.accessKey) {
-      return res.status(400).json({
-        success: false,
-        error: 'Missing required fields',
-        message: 'ecomDetails.platform and ecomDetails.accessKey are required',
-      });
-    }
-
-    if (!businessRules || typeof businessRules !== 'object') {
+    // Use businessName if provided, otherwise fall back to name, then email
+    const finalBusinessName = businessName || name || email;
+    if (!finalBusinessName) {
+      console.log('Validation failed: businessName/name/email is missing');
       return res.status(400).json({
         success: false,
         error: 'Missing required field',
-        message: 'businessRules object is required',
+        message: 'Business name or email is required',
       });
     }
 
-    // Validate that the platform exists in ecommerce_details
-    const platformExists = await Merchant.validatePlatform(ecomDetails.platform);
-    if (!platformExists) {
+    if (!email) {
+      console.log('Validation failed: email is missing');
       return res.status(400).json({
         success: false,
-        error: 'Invalid platform',
-        message: `Platform "${ecomDetails.platform}" does not exist in ecommerce_details collection`,
+        error: 'Missing required field',
+        message: 'Email is required',
       });
     }
 
-    // Validate business rule keys
-    const ruleValidation = await Merchant.validateBusinessRules(businessRules);
-    if (!ruleValidation.valid) {
+    if (!stores || !Array.isArray(stores) || stores.length === 0) {
       return res.status(400).json({
         success: false,
-        error: 'Invalid business rules',
-        message: ruleValidation.message,
-        invalidKeys: ruleValidation.invalidKeys,
+        error: 'Missing required field',
+        message: 'At least one store is required',
       });
     }
 
-    // Validate business rule values
-    const valueValidation = Merchant.validateBusinessRuleValues(businessRules);
-    if (!valueValidation.valid) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid business rule values',
-        message: valueValidation.errors.join('; '),
+    // Validate each store
+    for (const store of stores) {
+      if (!store.storeName) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required field',
+          message: 'Store name is required for all stores',
+        });
+      }
+
+      if (!store.platform || !store.storeDetails) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required fields',
+          message: 'platform and storeDetails are required for all stores',
+        });
+      }
+
+      // Validate storeDetails is an object with at least one property
+      if (typeof store.storeDetails !== 'object' || Object.keys(store.storeDetails).length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid storeDetails',
+          message: 'storeDetails must be an object with at least one credential',
+        });
+      }
+
+      if (!store.businessRules || typeof store.businessRules !== 'object') {
+        console.log('Validation failed: businessRules missing or not an object for store:', store.storeName);
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required field',
+          message: 'businessRules object is required for all stores',
+        });
+      }
+
+      console.log(`Validating store "${store.storeName}":`, {
+        platform: store.platform,
+        storeDetailsKeys: Object.keys(store.storeDetails),
+        businessRulesKeys: Object.keys(store.businessRules)
       });
+
+      // Validate that the platform exists in ecommerce_details
+      const platformExists = await Merchant.validatePlatform(store.platform);
+      if (!platformExists) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid platform',
+          message: `Platform "${store.platform}" does not exist in ecommerce_details collection`,
+        });
+      }
+
+      // Validate business rule keys
+      const ruleValidation = await Merchant.validateBusinessRules(store.businessRules);
+      if (!ruleValidation.valid) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid business rules',
+          message: ruleValidation.message,
+          invalidKeys: ruleValidation.invalidKeys,
+        });
+      }
+
+      // Validate business rule values
+      const valueValidation = Merchant.validateBusinessRuleValues(store.businessRules);
+      if (!valueValidation.valid) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid business rule values',
+          message: valueValidation.errors.join('; '),
+        });
+      }
     }
 
     // Create new merchant
-    const newMerchant = new Merchant({
-      name,
-      ecomDetails,
-      businessRules,
-    });
+    console.log('All validations passed. Creating merchant with stores:', stores.length);
+
+    const merchantDoc = {
+      userId,
+      businessName: finalBusinessName,
+      email,
+      stores,
+    };
+
+    console.log('Creating Merchant document with data:', JSON.stringify(merchantDoc, null, 2));
+
+    const newMerchant = new Merchant(merchantDoc);
+
+    console.log('Merchant document created, saving to DB...');
+    console.log('Document before save:', JSON.stringify(newMerchant.toObject(), null, 2));
 
     await newMerchant.save();
+    console.log('Document saved successfully!');
+
+    console.log('Merchant saved successfully:', newMerchant._id);
 
     res.status(201).json({
       success: true,
@@ -119,10 +239,11 @@ router.post('/', async (req, res) => {
 
     // Handle duplicate key errors
     if (error.code === 11000) {
+      console.error('Duplicate key error:', error);
       return res.status(409).json({
         success: false,
         error: 'Duplicate entry',
-        message: 'A merchant with this name may already exist',
+        message: 'A merchant already exists for this user. Use PATCH to add stores instead of POST.',
       });
     }
 
@@ -137,7 +258,7 @@ router.post('/', async (req, res) => {
 /**
  * PATCH /api/merchants/:id
  * Update a specific merchant by MongoDB _id
- * Allows updating: name, ecomDetails, and businessRules
+ * Allows updating stores, businessName, and email
  */
 router.patch('/:id', async (req, res) => {
   try {
@@ -152,85 +273,107 @@ router.patch('/:id', async (req, res) => {
       });
     }
 
-    const { name, ecomDetails, businessRules } = req.body;
+    const { userId, businessName, email, name, stores } = req.body;
 
-    // Check if there's any data to update
-    if (!name && !ecomDetails && !businessRules) {
-      return res.status(400).json({
+    // Fetch existing merchant
+    const existingMerchant = await Merchant.findById(id);
+    if (!existingMerchant) {
+      return res.status(404).json({
         success: false,
-        error: 'No valid fields to update',
-        message: 'Provide at least one field to update: name, ecomDetails, or businessRules',
+        error: 'Not found',
+        message: `Merchant with ID ${id} not found`,
       });
     }
 
-    // Build update object
+    // Build update object - only update fields that are provided
     const updateData = {};
-    if (name) updateData.name = name;
 
-    // Validate ecomDetails if provided
-    if (ecomDetails) {
-      if (ecomDetails.platform || ecomDetails.accessKey) {
-        // If updating ecomDetails, ensure both fields are present or fetch existing
-        const existingMerchant = await Merchant.findById(id);
-        if (!existingMerchant) {
-          return res.status(404).json({
+    // Update businessName if provided (with fallback to name or email)
+    if (businessName || name) {
+      updateData.businessName = businessName || name || existingMerchant.businessName;
+    }
+
+    // Update email if provided
+    if (email) {
+      updateData.email = email;
+    }
+
+    // Handle stores update - add new store to existing stores array
+    if (stores && Array.isArray(stores) && stores.length > 0) {
+      console.log('Adding new stores to existing merchant:', stores.length);
+
+      // Validate each new store
+      for (const store of stores) {
+        if (!store.storeName || !store.platform || !store.storeDetails) {
+          return res.status(400).json({
             success: false,
-            error: 'Not found',
-            message: `Merchant with ID ${id} not found`,
+            error: 'Missing required fields',
+            message: 'storeName, platform and storeDetails are required for all stores',
           });
         }
 
-        // Merge with existing ecomDetails
-        updateData.ecomDetails = {
-          platform: ecomDetails.platform || existingMerchant.ecomDetails.platform,
-          accessKey: ecomDetails.accessKey || existingMerchant.ecomDetails.accessKey,
-        };
-
-        // Validate platform
-        const platformExists = await Merchant.validatePlatform(updateData.ecomDetails.platform);
+        // Validate platform exists
+        const platformExists = await Merchant.validatePlatform(store.platform);
         if (!platformExists) {
           return res.status(400).json({
             success: false,
             error: 'Invalid platform',
-            message: `Platform "${updateData.ecomDetails.platform}" does not exist in ecommerce_details collection`,
+            message: `Platform "${store.platform}" does not exist in ecommerce_details collection`,
+          });
+        }
+
+        // Validate business rules
+        if (!store.businessRules || typeof store.businessRules !== 'object') {
+          return res.status(400).json({
+            success: false,
+            error: 'Missing required field',
+            message: 'businessRules object is required for all stores',
+          });
+        }
+
+        const ruleValidation = await Merchant.validateBusinessRules(store.businessRules);
+        if (!ruleValidation.valid) {
+          return res.status(400).json({
+            success: false,
+            error: 'Invalid business rules',
+            message: ruleValidation.message,
+            invalidKeys: ruleValidation.invalidKeys,
+          });
+        }
+
+        const valueValidation = Merchant.validateBusinessRuleValues(store.businessRules);
+        if (!valueValidation.valid) {
+          return res.status(400).json({
+            success: false,
+            error: 'Invalid business rule values',
+            message: valueValidation.errors.join('; '),
           });
         }
       }
+
+      // Add new stores to existing stores array using $push
+      updateData.$push = { stores: { $each: stores } };
     }
 
-    // Validate businessRules if provided
-    if (businessRules) {
-      // Validate rule keys
-      const ruleValidation = await Merchant.validateBusinessRules(businessRules);
-      if (!ruleValidation.valid) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid business rules',
-          message: ruleValidation.message,
-          invalidKeys: ruleValidation.invalidKeys,
-        });
-      }
-
-      // Validate rule values
-      const valueValidation = Merchant.validateBusinessRuleValues(businessRules);
-      if (!valueValidation.valid) {
-        return res.status(400).json({
-          success: false,
-          error: 'Invalid business rule values',
-          message: valueValidation.errors.join('; '),
-        });
-      }
-
-      updateData.businessRules = businessRules;
-    }
+    console.log('Update data:', JSON.stringify(updateData, null, 2));
 
     // Update the document
+    // Separate $push operations from $set operations
+    const updateOperations = {};
+    if (updateData.$push) {
+      updateOperations.$push = updateData.$push;
+      delete updateData.$push;
+    }
+    if (Object.keys(updateData).length > 0) {
+      updateOperations.$set = updateData;
+    }
+
     const updatedMerchant = await Merchant.findByIdAndUpdate(
       id,
-      { $set: updateData },
+      updateOperations,
       {
         new: true, // Return the updated document
-        runValidators: true, // Run schema validators
+        runValidators: false, // Don't run validators on partial updates
       }
     );
 

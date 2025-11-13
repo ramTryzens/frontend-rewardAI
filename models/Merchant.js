@@ -6,29 +6,61 @@ import mongoose from 'mongoose';
  */
 const merchantSchema = new mongoose.Schema(
   {
-    name: {
+    userId: {
       type: String,
-      required: [true, 'Merchant name is required'],
+      required: [true, 'User ID is required'],
+      unique: true,
+      index: true,
+    },
+    businessName: {
+      type: String,
+      required: [true, 'Business name is required'],
       trim: true,
     },
-    ecomDetails: {
-      platform: {
-        type: String,
-        required: [true, 'Ecommerce platform is required'],
-        trim: true,
-      },
-      accessKey: {
-        type: String,
-        required: [true, 'Access key is required'],
-        trim: true,
-      },
+    email: {
+      type: String,
+      required: [true, 'Email is required'],
+      trim: true,
+      lowercase: true,
     },
-    businessRules: {
-      type: Map,
-      of: mongoose.Schema.Types.Mixed, // Accepts boolean or number values
-      default: {},
-      required: [true, 'Business rules are required'],
-    },
+    stores: [
+      {
+        storeId: {
+          type: String,
+          required: true,
+          default: () => new mongoose.Types.ObjectId().toString(),
+        },
+        storeName: {
+          type: String,
+          required: [true, 'Store name is required'],
+          trim: true,
+        },
+        platform: {
+          type: String,
+          required: [true, 'Ecommerce platform is required'],
+          trim: true,
+        },
+        platformId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'EcommerceDetail',
+        },
+        storeDetails: {
+          type: mongoose.Schema.Types.Mixed, // Dynamic object to store platform-specific credentials
+          required: [true, 'Store details are required'],
+        },
+        businessRules: {
+          type: Map,
+          of: mongoose.Schema.Types.Mixed, // Accepts boolean or number values
+          default: {},
+          required: [true, 'Business rules are required'],
+        },
+        enabled: {
+          type: Boolean,
+          default: true,
+        },
+        _id: false, // Disable auto _id for subdocuments, we use storeId
+      },
+    ],
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields
@@ -37,8 +69,10 @@ const merchantSchema = new mongoose.Schema(
 );
 
 // Index for faster queries
-merchantSchema.index({ name: 1 });
-merchantSchema.index({ 'ecomDetails.platform': 1 });
+merchantSchema.index({ userId: 1 });
+merchantSchema.index({ email: 1 });
+merchantSchema.index({ 'stores.storeId': 1 });
+merchantSchema.index({ 'stores.platform': 1 });
 
 /**
  * Validation method to check if platform exists in ecommerce_details

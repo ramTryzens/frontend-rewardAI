@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useUser } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,35 +29,45 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Loader2, Copy, Eye, EyeOff } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import {
-  getMerchants,
+  getMerchantByUserId,
   createMerchant,
   updateMerchant,
   deleteMerchant,
   getEcommerceDetails,
   getRules,
   type Merchant,
-  type EcommerceDetail,
-  type Rule,
 } from "@/lib/api";
 
 const MerchantsTab = () => {
   const queryClient = useQueryClient();
+  const { user, isLoaded } = useUser();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMerchant, setEditingMerchant] = useState<Merchant | null>(null);
-  const [showAccessKey, setShowAccessKey] = useState(false);
+  const [currentUserMerchant, setCurrentUserMerchant] = useState<Merchant | null>(null);
   const [formData, setFormData] = useState({
     name: "",
+    storeName: "",
     platform: "",
-    accessKey: "",
+    platformId: "",
+    storeDetails: {} as Record<string, string>,
     selectedRules: {} as Record<string, boolean | number>,
   });
 
-  // Fetch data
+  // Fetch data - only fetch current user's merchant
   const { data: merchants, isLoading: loadingMerchants } = useQuery({
-    queryKey: ["merchants"],
-    queryFn: getMerchants,
+    queryKey: ["merchants", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      try {
+        const merchant = await getMerchantByUserId(user.id);
+        return [merchant];
+      } catch (error) {
+        return [];
+      }
+    },
+    enabled: !!user?.id,
   });
 
   const { data: platforms, isLoading: loadingPlatforms } = useQuery({
@@ -69,16 +80,45 @@ const MerchantsTab = () => {
     queryFn: getRules,
   });
 
+  // Get selected platform's credential requirements
+  const selectedPlatform = platforms?.find((p) => p.name === formData.platform);
+
+  // Fetch current user's merchant info on mount
+  useEffect(() => {
+    const fetchCurrentUserMerchant = async () => {
+      if (!isLoaded || !user) return;
+
+      try {
+        const merchant = await getMerchantByUserId(user.id);
+        setCurrentUserMerchant(merchant);
+        console.log('Current user merchant loaded:', merchant._id, 'with', merchant.stores?.length || 0, 'stores');
+      } catch (error) {
+        console.log('No merchant found for current user, they may need to create one');
+        setCurrentUserMerchant(null);
+      }
+    };
+
+    fetchCurrentUserMerchant();
+  }, [user, isLoaded]);
+
+  // Update currentUserMerchant when merchants data changes
+  useEffect(() => {
+    if (merchants && merchants.length > 0) {
+      setCurrentUserMerchant(merchants[0]);
+      console.log('Updated currentUserMerchant from query:', merchants[0]._id);
+    }
+  }, [merchants]);
+
   // Mutations
   const createMutation = useMutation({
     mutationFn: createMerchant,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["merchants"] });
-      toast.success("Merchant created successfully");
+      queryClient.invalidateQueries({ queryKey: ["merchants", user?.id] });
+      toast.success("Store created successfully");
       handleCloseDialog();
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to create merchant");
+      toast.error(error.message || "Failed to create store");
     },
   });
 
@@ -86,41 +126,47 @@ const MerchantsTab = () => {
     mutationFn: ({ id, data }: { id: string; data: Partial<Merchant> }) =>
       updateMerchant(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["merchants"] });
-      toast.success("Merchant updated successfully");
+      queryClient.invalidateQueries({ queryKey: ["merchants", user?.id] });
+      toast.success("Store updated successfully");
       handleCloseDialog();
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to update merchant");
+      toast.error(error.message || "Failed to update store");
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteMerchant,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["merchants"] });
-      toast.success("Merchant deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["merchants", user?.id] });
+      toast.success("Store deleted successfully");
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to delete merchant");
+      toast.error(error.message || "Failed to delete store");
     },
   });
 
   const handleOpenDialog = (merchant?: Merchant) => {
     if (merchant) {
       setEditingMerchant(merchant);
+      // For now, we'll edit the first store if merchant has stores
+      const firstStore = merchant.stores?.[0];
       setFormData({
-        name: merchant.name,
-        platform: merchant.ecomDetails.platform,
-        accessKey: merchant.ecomDetails.accessKey,
-        selectedRules: merchant.businessRules,
+        name: merchant.businessName || merchant.name || merchant.email,
+        storeName: firstStore?.storeName || "",
+        platform: firstStore?.platform || "",
+        platformId: firstStore?.platformId || "",
+        storeDetails: firstStore?.storeDetails || {},
+        selectedRules: firstStore?.businessRules || {},
       });
     } else {
       setEditingMerchant(null);
       setFormData({
-        name: "",
+        name: currentUserMerchant?.businessName || currentUserMerchant?.name || currentUserMerchant?.email || user?.primaryEmailAddress?.emailAddress || "",
+        storeName: "",
         platform: "",
-        accessKey: "",
+        platformId: "",
+        storeDetails: {},
         selectedRules: {},
       });
     }
@@ -130,11 +176,12 @@ const MerchantsTab = () => {
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingMerchant(null);
-    setShowAccessKey(false);
     setFormData({
       name: "",
+      storeName: "",
       platform: "",
-      accessKey: "",
+      platformId: "",
+      storeDetails: {},
       selectedRules: {},
     });
   };
@@ -165,9 +212,56 @@ const MerchantsTab = () => {
     }
   };
 
+  const handlePlatformChange = (platformName: string) => {
+    const platform = platforms?.find((p) => p.name === platformName);
+    // Reset storeDetails when platform changes
+    setFormData((prev) => ({
+      ...prev,
+      platform: platformName,
+      platformId: platform?._id || "",
+      storeDetails: {},
+    }));
+  };
+
+  const handleCredentialChange = (key: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      storeDetails: {
+        ...prev.storeDetails,
+        [key]: value,
+      },
+    }));
+  };
+
   const handleSubmit = () => {
-    if (!formData.name || !formData.platform || !formData.accessKey) {
+    if (!user?.id) {
+      toast.error("User not authenticated");
+      return;
+    }
+
+    if (!formData.storeName || !formData.platform) {
       toast.error("Please fill in all required fields");
+      return;
+    }
+
+    const userEmail = user?.primaryEmailAddress?.emailAddress || currentUserMerchant?.email || "";
+    if (!userEmail) {
+      toast.error("User email is required");
+      return;
+    }
+
+    // Validate required credentials
+    if (selectedPlatform?.required_credentials) {
+      for (const credential of selectedPlatform.required_credentials) {
+        if (credential.required && !formData.storeDetails[credential.key]) {
+          toast.error(`Please fill in the required field: ${credential.label}`);
+          return;
+        }
+      }
+    }
+
+    if (Object.keys(formData.storeDetails).length === 0) {
+      toast.error("Please fill in at least one store credential");
       return;
     }
 
@@ -176,24 +270,44 @@ const MerchantsTab = () => {
       return;
     }
 
-    const merchantData = {
-      name: formData.name,
-      ecomDetails: {
-        platform: formData.platform,
-        accessKey: formData.accessKey,
-      },
+    // Create store object
+    const store = {
+      storeName: formData.storeName,
+      platform: formData.platform,
+      platformId: formData.platformId,
+      storeDetails: formData.storeDetails,
       businessRules: formData.selectedRules,
     };
 
-    if (editingMerchant) {
-      updateMutation.mutate({ id: editingMerchant._id, data: merchantData });
+    // Use formData.name if available, otherwise fall back to email
+    const businessName = formData.name || userEmail;
+
+    const merchantData = {
+      userId: user.id,
+      businessName: businessName,
+      email: userEmail,
+      name: businessName, // Keep for backward compatibility
+      stores: [store], // For now, creating merchant with one store
+    };
+
+    console.log('Submitting merchant data:', JSON.stringify(merchantData, null, 2));
+
+    // Determine if we should update or create
+    // Always update if the user already has a merchant (to add stores to it)
+    const existingMerchantId = currentUserMerchant?._id || editingMerchant?._id;
+
+    if (existingMerchantId) {
+      console.log('Updating existing merchant (adding store):', existingMerchantId);
+      console.log('Current merchant has', currentUserMerchant?.stores?.length || 0, 'stores');
+      updateMutation.mutate({ id: existingMerchantId, data: merchantData });
     } else {
+      console.log('Creating new merchant for user:', user.id);
       createMutation.mutate(merchantData);
     }
   };
 
   const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this merchant?")) {
+    if (confirm("Are you sure you want to delete this merchant and all its store configurations?")) {
       deleteMutation.mutate(id);
     }
   };
@@ -210,14 +324,14 @@ const MerchantsTab = () => {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Merchants</h2>
+          <h2 className="text-2xl font-bold text-foreground">My Store Configurations</h2>
           <p className="text-sm text-muted-foreground">
-            Manage merchant configurations and their business rules
+            Manage your store configurations with platform credentials and business rules
           </p>
         </div>
         <Button onClick={() => handleOpenDialog()} className="gap-2">
           <Plus className="w-4 h-4" />
-          Add Merchant
+          Add Store
         </Button>
       </div>
 
@@ -225,9 +339,9 @@ const MerchantsTab = () => {
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-white/5 border-white/10">
-              <TableHead className="text-foreground">Name</TableHead>
+              <TableHead className="text-foreground">Store Name</TableHead>
               <TableHead className="text-foreground">Platform</TableHead>
-              <TableHead className="text-foreground">Access Key</TableHead>
+              <TableHead className="text-foreground">Credentials</TableHead>
               <TableHead className="text-foreground">Business Rules</TableHead>
               <TableHead className="text-foreground text-right">Actions</TableHead>
             </TableRow>
@@ -236,37 +350,47 @@ const MerchantsTab = () => {
             {merchants?.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                  No merchants found. Create your first merchant to get started.
+                  No stores found. Add your first store to get started.
                 </TableCell>
               </TableRow>
             ) : (
-              merchants?.map((merchant) => (
-                <TableRow key={merchant._id} className="hover:bg-white/5 border-white/10">
+              merchants?.flatMap((merchant) =>
+                merchant.stores?.map((store) => (
+                <TableRow key={store.storeId} className="hover:bg-white/5 border-white/10">
                   <TableCell className="font-medium text-foreground">
-                    {merchant.name}
+                    {store.storeName}
                   </TableCell>
                   <TableCell className="text-foreground">
-                    {merchant.ecomDetails.platform}
+                    {store.platform}
                   </TableCell>
                   <TableCell className="text-foreground">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm">{'•'.repeat(20)}</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          navigator.clipboard.writeText(merchant.ecomDetails.accessKey);
-                          toast.success("Access key copied to clipboard");
-                        }}
-                        className="h-7 w-7 p-0"
-                      >
-                        <Copy className="w-3 h-3" />
-                      </Button>
+                    <div className="flex flex-wrap gap-1">
+                      {store.storeDetails && Object.keys(store.storeDetails).length > 0 ? (
+                        Object.keys(store.storeDetails)
+                          .slice(0, 2)
+                          .map((key) => (
+                            <span
+                              key={key}
+                              className="text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded"
+                            >
+                              {key}
+                            </span>
+                          ))
+                      ) : (
+                        <span className="text-muted-foreground italic text-xs">
+                          No credentials
+                        </span>
+                      )}
+                      {store.storeDetails && Object.keys(store.storeDetails).length > 2 && (
+                        <span className="text-xs text-muted-foreground">
+                          +{Object.keys(store.storeDetails).length - 2} more
+                        </span>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="text-foreground">
                     <div className="flex flex-wrap gap-1">
-                      {Object.entries(merchant.businessRules)
+                      {store.businessRules && Object.entries(store.businessRules)
                         .slice(0, 3)
                         .map(([key, value]) => (
                           <span
@@ -276,9 +400,9 @@ const MerchantsTab = () => {
                             {key}: {String(value)}
                           </span>
                         ))}
-                      {Object.keys(merchant.businessRules).length > 3 && (
+                      {store.businessRules && Object.keys(store.businessRules).length > 3 && (
                         <span className="text-xs text-muted-foreground">
-                          +{Object.keys(merchant.businessRules).length - 3} more
+                          +{Object.keys(store.businessRules).length - 3} more
                         </span>
                       )}
                     </div>
@@ -302,7 +426,8 @@ const MerchantsTab = () => {
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
+                )) || []
+              )
             )}
           </TableBody>
         </Table>
@@ -313,12 +438,12 @@ const MerchantsTab = () => {
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingMerchant ? "Edit Merchant" : "Add New Merchant"}
+              {editingMerchant ? "Edit Store Configuration" : "Add New Store Configuration"}
             </DialogTitle>
             <DialogDescription>
               {editingMerchant
-                ? "Update merchant details and business rules"
-                : "Create a new merchant with platform and business rules"}
+                ? "Update store configuration, platform credentials, and business rules"
+                : "Create a new store configuration for a merchant with platform credentials and business rules"}
             </DialogDescription>
           </DialogHeader>
 
@@ -327,11 +452,25 @@ const MerchantsTab = () => {
               <Label htmlFor="name">Merchant Name *</Label>
               <Input
                 id="name"
-                value={formData.name}
+                value={formData.name || user?.primaryEmailAddress?.emailAddress || ""}
+                disabled
+                placeholder="Your business name or email"
+                className="bg-muted/50 cursor-not-allowed"
+              />
+              <p className="text-xs text-muted-foreground">
+                This store will be added to your merchant account. The merchant name will be set to your email if not configured.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="storeName">Store Name *</Label>
+              <Input
+                id="storeName"
+                value={formData.storeName}
                 onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
+                  setFormData({ ...formData, storeName: e.target.value })
                 }
-                placeholder="e.g., ACME Store"
+                placeholder="e.g., ACME Main Store"
               />
             </div>
 
@@ -339,9 +478,7 @@ const MerchantsTab = () => {
               <Label htmlFor="platform">Platform *</Label>
               <Select
                 value={formData.platform}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, platform: value })
-                }
+                onValueChange={handlePlatformChange}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a platform" />
@@ -358,51 +495,44 @@ const MerchantsTab = () => {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="accessKey">Access Key *</Label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Input
-                    id="accessKey"
-                    type={showAccessKey ? "text" : "password"}
-                    value={formData.accessKey}
-                    onChange={(e) =>
-                      setFormData({ ...formData, accessKey: e.target.value })
-                    }
-                    placeholder="Enter API access key"
-                    className="pr-10"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowAccessKey(!showAccessKey)}
-                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                  >
-                    {showAccessKey ? (
-                      <EyeOff className="w-4 h-4 text-muted-foreground" />
-                    ) : (
-                      <Eye className="w-4 h-4 text-muted-foreground" />
+            {/* Dynamic Credential Fields */}
+            {selectedPlatform && selectedPlatform.required_credentials && selectedPlatform.required_credentials.length > 0 && (
+              <div className="space-y-3 border border-white/10 rounded-lg p-4">
+                <Label>Store Credentials *</Label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Provide the required credentials for {selectedPlatform.name}
+                </p>
+                {selectedPlatform.required_credentials.map((credential) => (
+                  <div key={credential.key} className="space-y-2">
+                    <Label htmlFor={credential.key}>
+                      {credential.label}
+                      {credential.required && <span className="text-red-400 ml-1">*</span>}
+                    </Label>
+                    {credential.description && (
+                      <p className="text-xs text-muted-foreground mb-1">
+                        {credential.description}
+                      </p>
                     )}
-                  </Button>
-                </div>
-                {formData.accessKey && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      navigator.clipboard.writeText(formData.accessKey);
-                      toast.success("Access key copied to clipboard");
-                    }}
-                    className="gap-2"
-                  >
-                    <Copy className="w-4 h-4" />
-                    Copy
-                  </Button>
-                )}
+                    <Input
+                      id={credential.key}
+                      type={credential.type === 'password' ? 'password' : 'text'}
+                      value={formData.storeDetails[credential.key] || ""}
+                      onChange={(e) =>
+                        handleCredentialChange(credential.key, e.target.value)
+                      }
+                      placeholder={`Enter ${credential.label.toLowerCase()}`}
+                      required={credential.required}
+                    />
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
+
+            {formData.platform && (!selectedPlatform?.required_credentials || selectedPlatform.required_credentials.length === 0) && (
+              <div className="text-center py-4 text-muted-foreground text-sm border border-white/10 rounded-lg border-dashed">
+                No credentials required for this platform
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label>Business Rules * (Select at least one)</Label>
@@ -488,9 +618,9 @@ const MerchantsTab = () => {
                   {editingMerchant ? "Updating..." : "Creating..."}
                 </>
               ) : editingMerchant ? (
-                "Update Merchant"
+                "Update Store Configuration"
               ) : (
-                "Create Merchant"
+                "Create Store Configuration"
               )}
             </Button>
           </DialogFooter>

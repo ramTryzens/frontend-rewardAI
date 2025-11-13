@@ -1,16 +1,49 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useUser } from "@clerk/clerk-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings } from "lucide-react";
+import { Settings, Loader2 } from "lucide-react";
 import MerchantsTab from "@/components/merchant-admin/MerchantsTab";
 import EcommerceTab from "@/components/merchant-admin/EcommerceTab";
 import RulesTab from "@/components/merchant-admin/RulesTab";
 
 const MerchantAdmin = () => {
   const navigate = useNavigate();
+  const { user, isLoaded } = useUser();
   const [activeTab, setActiveTab] = useState("merchants");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!isLoaded || !user) return;
+
+      try {
+        const response = await fetch(`http://localhost:3001/api/users/${user.id}`);
+
+        if (response.ok) {
+          const dbUser = await response.json();
+          setIsAdmin(dbUser.isAdmin);
+        }
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAdminStatus();
+  }, [user, isLoaded]);
+
+  if (loading || !isLoaded) {
+    return (
+      <div className="min-h-screen bg-gradient-bg flex items-center justify-center">
+        <Loader2 className="w-12 h-12 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-bg p-4 md:p-8">
@@ -61,18 +94,22 @@ const MerchantAdmin = () => {
               >
                 Merchants
               </TabsTrigger>
-              <TabsTrigger
-                value="ecommerce"
-                className="flex-1 md:flex-none data-[state=active]:bg-white/10 data-[state=active]:text-foreground rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
-              >
-                Ecommerce Platforms
-              </TabsTrigger>
-              <TabsTrigger
-                value="rules"
-                className="flex-1 md:flex-none data-[state=active]:bg-white/10 data-[state=active]:text-foreground rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
-              >
-                Business Rules
-              </TabsTrigger>
+              {isAdmin && (
+                <>
+                  <TabsTrigger
+                    value="ecommerce"
+                    className="flex-1 md:flex-none data-[state=active]:bg-white/10 data-[state=active]:text-foreground rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+                  >
+                    Ecommerce Platforms
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="rules"
+                    className="flex-1 md:flex-none data-[state=active]:bg-white/10 data-[state=active]:text-foreground rounded-none border-b-2 border-transparent data-[state=active]:border-primary"
+                  >
+                    Business Rules
+                  </TabsTrigger>
+                </>
+              )}
             </TabsList>
 
             <div className="p-6">
@@ -80,13 +117,17 @@ const MerchantAdmin = () => {
                 <MerchantsTab />
               </TabsContent>
 
-              <TabsContent value="ecommerce" className="mt-0">
-                <EcommerceTab />
-              </TabsContent>
+              {isAdmin && (
+                <>
+                  <TabsContent value="ecommerce" className="mt-0">
+                    <EcommerceTab />
+                  </TabsContent>
 
-              <TabsContent value="rules" className="mt-0">
-                <RulesTab />
-              </TabsContent>
+                  <TabsContent value="rules" className="mt-0">
+                    <RulesTab />
+                  </TabsContent>
+                </>
+              )}
             </div>
           </Tabs>
         </motion.div>

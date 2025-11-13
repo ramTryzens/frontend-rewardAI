@@ -45,11 +45,20 @@ export async function getCartDetails(cartId: string): Promise<Cart> {
 
 // ========== Ecommerce Details API ==========
 
+export interface CredentialField {
+  key: string;
+  label: string;
+  description?: string;
+  type: 'text' | 'password' | 'url';
+  required: boolean;
+}
+
 export interface EcommerceDetail {
   _id: string;
   name: string;
   api_version: string;
   api_urls?: Record<string, { endpoint: string; method: string }>;
+  required_credentials?: CredentialField[];
   enabled: boolean;
   createdAt: string;
   updatedAt: string;
@@ -159,14 +168,23 @@ export async function deleteRule(id: string): Promise<void> {
 
 // ========== Merchants API ==========
 
+export interface Store {
+  storeId?: string;
+  storeName: string;
+  platform: string;
+  platformId?: string;
+  storeDetails: Record<string, string>;
+  businessRules: Record<string, boolean | number>;
+  enabled?: boolean;
+}
+
 export interface Merchant {
   _id: string;
-  name: string;
-  ecomDetails: {
-    platform: string;
-    accessKey: string;
-  };
-  businessRules: Record<string, boolean | number>;
+  userId: string;
+  businessName: string;
+  email: string;
+  name?: string; // Keep for backward compatibility
+  stores: Store[];
   createdAt: string;
   updatedAt: string;
 }
@@ -174,6 +192,16 @@ export interface Merchant {
 export async function getMerchants(): Promise<Merchant[]> {
   const res = await fetch(`${API_BASE_URL}/merchants`);
   if (!res.ok) throw new Error('Failed to fetch merchants');
+  const response = await res.json();
+  return response.data;
+}
+
+export async function getMerchantByUserId(userId: string): Promise<Merchant> {
+  const res = await fetch(`${API_BASE_URL}/merchants/by-user/${userId}`);
+  if (!res.ok) {
+    const error = await res.json();
+    throw new Error(error.message || 'Failed to fetch merchant');
+  }
   const response = await res.json();
   return response.data;
 }
