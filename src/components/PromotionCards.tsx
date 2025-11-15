@@ -1,25 +1,11 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, TrendingUp, Dices, Loader2, Gift, Tag, Percent, DollarSign, Trophy, XCircle } from "lucide-react";
+import { Sparkles, TrendingUp, Dices, Gift, DollarSign, Trophy, XCircle } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
-interface SmartOffer {
-  offerName?: string;
-  discount?: string | number;
-  description?: string;
-  validUntil?: string;
-  category?: string;
-  minimumPurchase?: string | number;
-  reward_type?: string;
-  offer_type?: string;
-  offer_value?: number | string;
-  reasoning?: string;
-  [key: string]: any;
-}
+import { evaluateSmartOffers, type SmartOffer } from "@/lib/api";
 
 interface PromotionCardsProps {
   cartId?: string;
@@ -100,44 +86,21 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 0, merchantId, storeId
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch("https://tryzens-ai.app.n8n.cloud/webhook-test/getSmartOffers", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-API-Key": "test@123"
-          },
-          body: JSON.stringify({
-            customerId: customerId || 3,
-            cartId: cartId || "50656685-567c-42c9-9a1e-9389e9f76b68",
-            merchantId: merchantId || "",
-            storeId: storeId || ""
-          })
+        const data = await evaluateSmartOffers({
+          customerId: customerId || 3,
+          cartId: cartId || "50656685-567c-42c9-9a1e-9389e9f76b68",
+          merchantId: merchantId || "",
+          storeId: storeId || ""
         });
-
-        if (!response.ok) {
-          throw new Error(`API Error: ${response.status}`);
-        }
-
-        const data = await response.json();
 
         // Debug: Log the API response
         console.log('Smart Offers API Response:', data);
 
-        // Handle both array and object responses
-        if (Array.isArray(data)) {
-          console.log('Smart Offers Array:', data);
-          setSmartOffers(data);
-          // Extract ai_bid from first offer
-          if (data.length > 0) {
-            extractAiBid(data[0]);
-          }
-        } else if (data && typeof data === 'object') {
-          // If it's a single offer object, wrap it in an array
-          console.log('Smart Offers Single Object:', data);
-          setSmartOffers([data]);
-          extractAiBid(data);
-        } else {
-          setSmartOffers([]);
+        setSmartOffers(data);
+
+        // Extract ai_bid from first offer
+        if (data.length > 0) {
+          extractAiBid(data[0]);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to fetch smart offers");
@@ -351,19 +314,23 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 0, merchantId, storeId
                         <div className="flex-1 space-y-3">
                           {/* Offer Summary */}
                           {(() => {
-                            let offerData = offer.data || offer.Data || offer;
+                            let rawData = offer.data || offer.Data || offer;
+                            let offerData: Record<string, unknown> = {};
 
-                            // If offerData is a string, parse it as JSON
-                            if (typeof offerData === 'string') {
+                            // If rawData is a string, parse it as JSON
+                            if (typeof rawData === 'string') {
                               try {
-                                offerData = JSON.parse(offerData);
+                                offerData = JSON.parse(rawData) as Record<string, unknown>;
                               } catch (e) {
                                 console.error('Failed to parse offer data:', e);
+                                return null;
                               }
+                            } else {
+                              offerData = rawData as Record<string, unknown>;
                             }
 
-                            const offerName = offerData.offerName || offerData.offer_name || offerData.name;
-                            const offerValue = offerData.offer_value || offerData.offerValue || offerData.OfferValue;
+                            const offerName = (offerData.offerName || offerData.offer_name || offerData.name) as string | undefined;
+                            const offerValue = (offerData.offer_value || offerData.offerValue || offerData.OfferValue) as number | string | undefined;
 
                             return offerName ? (
                               <div className="flex items-start justify-between gap-2">
@@ -394,16 +361,20 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 0, merchantId, storeId
                               <TableBody>
                                 {(() => {
                                   // Check if data is nested inside a 'data' field
-                                  let offerData = offer.data || offer.Data || offer;
+                                  let rawData = offer.data || offer.Data || offer;
+                                  let offerData: Record<string, unknown> = {};
 
                                   // If offerData is a string, parse it as JSON
-                                  if (typeof offerData === 'string') {
+                                  if (typeof rawData === 'string') {
                                     try {
-                                      offerData = JSON.parse(offerData);
+                                      offerData = JSON.parse(rawData) as Record<string, unknown>;
                                       console.log('Parsed JSON data:', offerData);
                                     } catch (e) {
                                       console.error('Failed to parse offer data as JSON:', e);
+                                      offerData = {};
                                     }
+                                  } else {
+                                    offerData = rawData as Record<string, unknown>;
                                   }
 
                                   // Get all keys from the offer object
@@ -464,7 +435,7 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 0, merchantId, storeId
                                         <TableCell className="text-foreground font-bold">
                                           ${typeof offerValue === 'number'
                                             ? offerValue.toFixed(2)
-                                            : offerValue}
+                                            : String(offerValue)}
                                         </TableCell>
                                       </TableRow>
                                     );
@@ -543,15 +514,19 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 0, merchantId, storeId
                                 <TableBody>
                                   {(() => {
                                     // Check if data is nested inside a 'data' field
-                                    let offerData = offer.data || offer.Data || offer;
+                                    let rawData = offer.data || offer.Data || offer;
+                                    let offerData: Record<string, unknown> = {};
 
                                     // If offerData is a string, parse it as JSON
-                                    if (typeof offerData === 'string') {
+                                    if (typeof rawData === 'string') {
                                       try {
-                                        offerData = JSON.parse(offerData);
+                                        offerData = JSON.parse(rawData) as Record<string, unknown>;
                                       } catch (e) {
                                         console.error('Failed to parse offer data in View AI Offer:', e);
+                                        offerData = {};
                                       }
+                                    } else {
+                                      offerData = rawData as Record<string, unknown>;
                                     }
 
                                     const displayFields = [

@@ -25,8 +25,16 @@ export interface Cart {
   };
 }
 
-export async function getCartDetails(cartId: string): Promise<Cart> {
-  const res = await fetch(`${API_BASE_URL}/carts/${cartId}`, {
+export async function getCartDetails(cartId: string, platform?: string): Promise<Cart> {
+  // Determine which endpoint to use based on platform
+  const isMagento = platform && platform.toLowerCase() !== 'bigcommerce' && platform.toLowerCase() !== 'big commerce';
+  const endpoint = isMagento
+    ? `${API_BASE_URL}/magento/carts/${cartId}`
+    : `${API_BASE_URL}/carts/${cartId}`;
+
+  console.log(`🛒 Fetching cart from ${isMagento ? 'Magento (Adobe Commerce)' : 'BigCommerce'} via backend - Platform: ${platform}`);
+
+  const res = await fetch(endpoint, {
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
@@ -41,130 +49,6 @@ export async function getCartDetails(cartId: string): Promise<Cart> {
   const response = await res.json();
   console.log("🚀 ~ getCartDetails ~ response:", response);
   return response.data;
-}
-
-// ========== Ecommerce Details API ==========
-
-export interface CredentialField {
-  key: string;
-  label: string;
-  description?: string;
-  type: 'text' | 'password' | 'url';
-  required: boolean;
-}
-
-export interface EcommerceDetail {
-  _id: string;
-  name: string;
-  api_version: string;
-  api_urls?: Record<string, { endpoint: string; method: string }>;
-  required_credentials?: CredentialField[];
-  enabled: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export async function getEcommerceDetails(): Promise<EcommerceDetail[]> {
-  const res = await fetch(`${API_BASE_URL}/ecommerce-details`);
-  if (!res.ok) throw new Error('Failed to fetch ecommerce details');
-  const response = await res.json();
-  return response.data;
-}
-
-export async function createEcommerceDetail(data: Partial<EcommerceDetail>): Promise<EcommerceDetail> {
-  const res = await fetch(`${API_BASE_URL}/ecommerce-details`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.message || 'Failed to create ecommerce detail');
-  }
-  const response = await res.json();
-  return response.data;
-}
-
-export async function updateEcommerceDetail(id: string, data: Partial<EcommerceDetail>): Promise<EcommerceDetail> {
-  const res = await fetch(`${API_BASE_URL}/ecommerce-details/${id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.message || 'Failed to update ecommerce detail');
-  }
-  const response = await res.json();
-  return response.data;
-}
-
-export async function deleteEcommerceDetail(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE_URL}/ecommerce-details/${id}`, {
-    method: 'DELETE',
-  });
-  if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.message || 'Failed to delete ecommerce detail');
-  }
-}
-
-// ========== Rules API ==========
-
-export interface Rule {
-  _id: string;
-  id: number;
-  key: string;
-  enabled: boolean;
-  value?: boolean | number;
-  description?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export async function getRules(): Promise<Rule[]> {
-  const res = await fetch(`${API_BASE_URL}/rules`);
-  if (!res.ok) throw new Error('Failed to fetch rules');
-  const response = await res.json();
-  return response.data;
-}
-
-export async function createRule(data: Partial<Rule>): Promise<Rule> {
-  const res = await fetch(`${API_BASE_URL}/rules`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.message || 'Failed to create rule');
-  }
-  const response = await res.json();
-  return response.data;
-}
-
-export async function updateRule(id: string, data: Partial<Rule>): Promise<Rule> {
-  const res = await fetch(`${API_BASE_URL}/rules/${id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.message || 'Failed to update rule');
-  }
-  const response = await res.json();
-  return response.data;
-}
-
-export async function deleteRule(id: string): Promise<void> {
-  const res = await fetch(`${API_BASE_URL}/rules/${id}`, {
-    method: 'DELETE',
-  });
-  if (!res.ok) {
-    const error = await res.json();
-    throw new Error(error.message || 'Failed to delete rule');
-  }
 }
 
 // ========== Merchants API ==========
@@ -244,4 +128,60 @@ export async function deleteMerchant(id: string): Promise<void> {
     const error = await res.json();
     throw new Error(error.message || 'Failed to delete merchant');
   }
+}
+
+// ========== Evaluate Smart Offers API ==========
+
+export interface EvaluateRequest {
+  customerId: string | number;
+  cartId: string;
+  merchantId?: string;
+  storeId?: string;
+}
+
+export interface SmartOffer {
+  offerName?: string;
+  discount?: string | number;
+  description?: string;
+  validUntil?: string;
+  category?: string;
+  minimumPurchase?: string | number;
+  reward_type?: string;
+  offer_type?: string;
+  offer_value?: number | string;
+  reasoning?: string;
+  ai_bid?: number;
+  aiBid?: number;
+  AI_BID?: number;
+  data?: string | Record<string, unknown>;
+  Data?: string | Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+export async function evaluateSmartOffers(data: EvaluateRequest): Promise<SmartOffer[]> {
+  const res = await fetch(`${API_BASE_URL}/evaluate`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(error.message || 'Failed to evaluate smart offers');
+  }
+
+  const response = await res.json();
+
+  // Handle both array and object responses
+  if (Array.isArray(response)) {
+    return response;
+  } else if (response.data) {
+    return Array.isArray(response.data) ? response.data : [response.data];
+  } else if (response && typeof response === 'object') {
+    return [response];
+  }
+
+  return [];
 }
