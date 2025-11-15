@@ -16,6 +16,7 @@ const CartDetails = () => {
   const merchantId = searchParams.get("merchantId") || "";
   const storeId = searchParams.get("storeId") || "";
   const platform = searchParams.get("platform") || "";
+  const merchantEmail = decodeURIComponent(searchParams.get("merchantEmail") || "");
 
   const { data: cart, isLoading, error } = useQuery({
     queryKey: ["cart", id, platform],
@@ -23,8 +24,14 @@ const CartDetails = () => {
     enabled: !!id,
   });
 
-  // Log the merchant and store IDs for debugging
-  console.log("Cart Details - Merchant ID:", merchantId, "Store ID:", storeId);
+  // Log the parameters for debugging
+  console.log("🛒 Cart Details Parameters:", {
+    merchantId,
+    merchantEmail,
+    storeId,
+    platform,
+    customerId
+  });
 
   if (isLoading) {
     return (
@@ -212,6 +219,7 @@ const CartDetails = () => {
             cartTotal={total}
             merchantId={merchantId}
             storeId={storeId}
+            merchantEmail={merchantEmail}
           />
         </motion.div>
       </motion.div>

@@ -137,6 +137,8 @@ export interface EvaluateRequest {
   cartId: string;
   merchantId?: string;
   storeId?: string;
+  merchantEmail?: string;
+  storeName?: string;
 }
 
 export interface SmartOffer {

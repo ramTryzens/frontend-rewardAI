@@ -48,8 +48,18 @@ const SelectCart = () => {
       const merchantIdParam = selectedMerchant?._id || "";
       const storeIdParam = selectedStore?.storeId || "";
       const platformParam = selectedStore?.platform || "";
+      const merchantEmailParam = encodeURIComponent(selectedMerchant?.email || "");
 
-      navigate(`/cart/${customCartId.trim()}?customerId=${customerIdParam}&merchantId=${merchantIdParam}&storeId=${storeIdParam}&platform=${platformParam}`);
+      // Debug logging
+      console.log("🔍 Navigation Parameters:", {
+        merchantId: merchantIdParam,
+        merchantEmail: selectedMerchant?.email,
+        storeId: storeIdParam,
+        selectedMerchant,
+        selectedStore
+      });
+
+      navigate(`/cart/${customCartId.trim()}?customerId=${customerIdParam}&merchantId=${merchantIdParam}&storeId=${storeIdParam}&platform=${platformParam}&merchantEmail=${merchantEmailParam}`);
     } else {
       alert("Please enter a valid Cart ID");
     }

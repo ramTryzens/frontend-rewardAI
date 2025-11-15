@@ -13,9 +13,10 @@ interface PromotionCardsProps {
   cartTotal?: number;
   merchantId?: string;
   storeId?: string;
+  merchantEmail?: string;
 }
 
-const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, storeId }: PromotionCardsProps) => {
+const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, storeId, merchantEmail }: PromotionCardsProps) => {
   // Fallback hardcoded data (from your friend)
   const fallbackData = {
     proposedDiscountPercentage: "25",
@@ -26,7 +27,7 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
   };
 
   // State for AI data (from n8n API or fallback)
-  const [aiProposedData, setAiProposedData] = useState(fallbackData);
+  const [aiProposedData, setAiProposedData] = useState<typeof fallbackData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,30 +51,46 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
       setLoading(true);
       setError(null);
       try {
-        const data = await evaluateSmartOffers({
+        const payload = {
           customerId: customerId || 3,
           cartId: cartId || "50656685-567c-42c9-9a1e-9389e9f76b68",
           merchantId: merchantId || "",
-          storeId: storeId || ""
-        });
+          storeId: storeId || "",
+          merchantEmail: merchantEmail || ""
+        };
 
-        console.log('n8n API Response:', data);
+        console.log('📤 Sending to n8n evaluate:', payload);
+
+        const data = await evaluateSmartOffers(payload);
+
+        console.log('📥 n8n API Response:', data);
 
         // If we got valid data from n8n, use it
         if (data && data.length > 0) {
-          const firstOffer = data[0];
+          const firstOffer = data[0] as any;
+          // Check if data is nested inside 'output' property
+          const offerData = firstOffer.output || firstOffer;
+
+          console.log('📦 Parsed offer data:', offerData);
+
           // Parse n8n response and map to our format
           const n8nData = {
-            proposedDiscountPercentage: String(firstOffer.offer_value || fallbackData.proposedDiscountPercentage),
-            proposedDiscountAmount: Number(firstOffer.offer_value) || fallbackData.proposedDiscountAmount,
-            proposedLoyaltyPoints: Number(firstOffer.reward_points) || fallbackData.proposedLoyaltyPoints,
-            proposedMinBidAmount: Number(firstOffer.ai_bid || firstOffer.aiBid || firstOffer.AI_BID) || fallbackData.proposedMinBidAmount,
-            proposedSpinWheelValues: firstOffer.spin_values || fallbackData.proposedSpinWheelValues
+            proposedDiscountPercentage: String(offerData.proposedDiscountPercentage || fallbackData.proposedDiscountPercentage),
+            proposedDiscountAmount: Number(offerData.proposedDiscountAmount) || fallbackData.proposedDiscountAmount,
+            proposedLoyaltyPoints: Number(offerData.proposedLoyaltyPoints) || fallbackData.proposedLoyaltyPoints,
+            proposedMinBidAmount: Number(offerData.proposedMinBidAmount) || fallbackData.proposedMinBidAmount,
+            proposedSpinWheelValues: Array.isArray(offerData.proposedSpinWheelValues) ? offerData.proposedSpinWheelValues : fallbackData.proposedSpinWheelValues
           };
+
+          console.log('✅ Final AI data to display:', n8nData);
+          console.log('⚠️ Using fallback for:', {
+            minBidAmount: !offerData.proposedMinBidAmount,
+            spinWheelValues: !Array.isArray(offerData.proposedSpinWheelValues)
+          });
           setAiProposedData(n8nData);
         } else {
           // No data from n8n, use fallback
-          console.log('No data from n8n, using fallback');
+          console.log('❌ No data from n8n, using fallback');
           setAiProposedData(fallbackData);
         }
       } catch (err) {
@@ -87,7 +104,7 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
     };
 
     fetchAiData();
-  }, [cartId, customerId, merchantId, storeId]);
+  }, [cartId, customerId, merchantId, storeId, merchantEmail]);
 
   // Handle bid submission
   const handleBidSubmit = () => {
@@ -103,7 +120,7 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
       return;
     }
 
-    const aiBid = aiProposedData.proposedMinBidAmount;
+    const aiBid = aiProposedData?.proposedMinBidAmount || fallbackData.proposedMinBidAmount;
 
     setHasBid(true);
     setIsSpinning(true);
@@ -127,11 +144,12 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
     setIsWheelSpinning(true);
     setShowWheelResult(false);
 
-    const randomIndex = Math.floor(Math.random() * aiProposedData.proposedSpinWheelValues.length);
+    const spinValues = aiProposedData?.proposedSpinWheelValues || fallbackData.proposedSpinWheelValues;
+    const randomIndex = Math.floor(Math.random() * spinValues.length);
 
     setTimeout(() => {
       setSelectedSegment(randomIndex);
-      setWheelResult(aiProposedData.proposedSpinWheelValues[randomIndex]);
+      setWheelResult(spinValues[randomIndex]);
       setIsWheelSpinning(false);
       setShowWheelResult(true);
     }, 3000);
@@ -195,7 +213,7 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
                 </div>
               </div>
 
-              {loading ? (
+              {loading || !aiProposedData ? (
                 <div className="text-center py-8">
                   <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-purple-500 border-r-transparent"></div>
                   <p className="text-muted-foreground text-sm mt-4">Loading AI offer...</p>
@@ -302,47 +320,54 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
                 </div>
               </div>
 
-              {/* Loyalty Points Card */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2 }}
-                className="relative overflow-hidden bg-gradient-to-br from-green-900/40 via-emerald-900/40 to-teal-900/40 rounded-2xl p-6 border border-green-500/30 backdrop-blur-sm"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-green-600/10 via-emerald-600/10 to-teal-600/10 animate-pulse" />
+              {loading || !aiProposedData ? (
+                <div className="text-center py-8">
+                  <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-green-500 border-r-transparent"></div>
+                  <p className="text-muted-foreground text-sm mt-4">Loading AI offer...</p>
+                </div>
+              ) : (
+                <>
+                  {/* Loyalty Points Card */}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="relative overflow-hidden bg-gradient-to-br from-green-900/40 via-emerald-900/40 to-teal-900/40 rounded-2xl p-6 border border-green-500/30 backdrop-blur-sm"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-green-600/10 via-emerald-600/10 to-teal-600/10 animate-pulse" />
 
-                <div className="relative z-10 space-y-4">
-                  <div className="flex items-center justify-between flex-wrap gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-gradient-to-br from-green-500 to-emerald-500 p-3 rounded-xl shadow-lg">
-                        <Coins className="w-6 h-6 text-white" />
+                    <div className="relative z-10 space-y-4">
+                      <div className="flex items-center justify-between flex-wrap gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-gradient-to-br from-green-500 to-emerald-500 p-3 rounded-xl shadow-lg">
+                            <Coins className="w-6 h-6 text-white" />
+                          </div>
+                          <div>
+                            <h4 className="text-lg font-bold text-foreground">Store Credit Points</h4>
+                            <p className="text-xs text-muted-foreground">Earned from this purchase</p>
+                          </div>
+                        </div>
+                        <Badge className="bg-gradient-to-r from-green-600 to-emerald-600 text-white text-xl px-5 py-2 shadow-lg">
+                          {aiProposedData.proposedLoyaltyPoints} pts
+                        </Badge>
                       </div>
-                      <div>
-                        <h4 className="text-lg font-bold text-foreground">Store Credit Points</h4>
-                        <p className="text-xs text-muted-foreground">Earned from this purchase</p>
+
+                      <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-xl p-6 border border-green-500/20">
+                        <div className="text-center space-y-2">
+                          <p className="text-sm text-muted-foreground">You have earned</p>
+                          <p className="text-5xl font-bold text-green-400">
+                            {aiProposedData.proposedLoyaltyPoints}
+                          </p>
+                          <p className="text-lg text-foreground">Store Credit Points</p>
+                        </div>
                       </div>
-                    </div>
-                    <Badge className="bg-gradient-to-r from-green-600 to-emerald-600 text-white text-xl px-5 py-2 shadow-lg">
-                      {aiProposedData.proposedLoyaltyPoints} pts
-                    </Badge>
-                  </div>
 
-                  <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-xl p-6 border border-green-500/20">
-                    <div className="text-center space-y-2">
-                      <p className="text-sm text-muted-foreground">You have earned</p>
-                      <p className="text-5xl font-bold text-green-400">
-                        {aiProposedData.proposedLoyaltyPoints}
-                      </p>
-                      <p className="text-lg text-foreground">Store Credit Points</p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-3">
-                    {[
-                      { icon: Award, label: "Rewards", value: `+${aiProposedData.proposedLoyaltyPoints}pts` },
-                      { icon: Star, label: "Status", value: "Gold" },
-                      { icon: Gift, label: "Perks", value: "Active" }
-                    ].map((item, i) => (
+                      <div className="grid grid-cols-3 gap-3">
+                        {[
+                          { icon: Award, label: "Rewards", value: `+${aiProposedData.proposedLoyaltyPoints}pts` },
+                          { icon: Star, label: "Status", value: "Gold" },
+                          { icon: Gift, label: "Perks", value: "Active" }
+                        ].map((item, i) => (
                       <motion.div
                         key={i}
                         initial={{ opacity: 0, y: 10 }}
@@ -358,6 +383,8 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
                   </div>
                 </div>
               </motion.div>
+                </>
+              )}
             </motion.div>
           );
         }
@@ -386,29 +413,36 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
                 </div>
               </div>
 
-              {/* Bidding Interface */}
-              {!hasBid && (
-                <div className="space-y-3">
-                  <Input
-                    type="number"
-                    placeholder="Enter your bid amount"
-                    value={userBid}
-                    onChange={(e) => setUserBid(e.target.value)}
-                    className="bg-white/10 border-white/20 text-foreground placeholder:text-muted-foreground"
-                  />
-                  <Button
-                    onClick={handleBidSubmit}
-                    disabled={!userBid}
-                    className="w-full bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 hover:from-orange-600 hover:via-amber-600 hover:to-yellow-600 text-white font-semibold py-3"
-                  >
-                    <Dices className="w-5 h-5 mr-2" />
-                    Bid and Win against AI
-                  </Button>
-                  <p className="text-xs text-muted-foreground text-center">
-                    AI bid amount is ${aiProposedData.proposedMinBidAmount.toFixed(2)}
-                  </p>
+              {loading || !aiProposedData ? (
+                <div className="text-center py-8">
+                  <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-orange-500 border-r-transparent"></div>
+                  <p className="text-muted-foreground text-sm mt-4">Loading AI offer...</p>
                 </div>
-              )}
+              ) : (
+                <>
+                  {/* Bidding Interface */}
+                  {!hasBid && (
+                    <div className="space-y-3">
+                      <Input
+                        type="number"
+                        placeholder="Enter your bid amount"
+                        value={userBid}
+                        onChange={(e) => setUserBid(e.target.value)}
+                        className="bg-white/10 border-white/20 text-foreground placeholder:text-muted-foreground"
+                      />
+                      <Button
+                        onClick={handleBidSubmit}
+                        disabled={!userBid}
+                        className="w-full bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 hover:from-orange-600 hover:via-amber-600 hover:to-yellow-600 text-white font-semibold py-3"
+                      >
+                        <Dices className="w-5 h-5 mr-2" />
+                        Bid and Win against AI
+                      </Button>
+                      <p className="text-xs text-muted-foreground text-center">
+                        AI bid amount is ${aiProposedData.proposedMinBidAmount.toFixed(2)}
+                      </p>
+                    </div>
+                  )}
 
               {/* Spin Wheel Animation */}
               <AnimatePresence>
@@ -491,7 +525,7 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">AI Bid:</span>
-                            <span className="text-foreground font-semibold">${aiProposedData.proposedMinBidAmount.toFixed(2)}</span>
+                            <span className="text-foreground font-semibold">${(aiProposedData?.proposedMinBidAmount || fallbackData.proposedMinBidAmount).toFixed(2)}</span>
                           </div>
                         </div>
                       </div>
@@ -499,6 +533,8 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
                   </motion.div>
                 )}
               </AnimatePresence>
+                </>
+              )}
             </motion.div>
           );
         }
@@ -527,9 +563,16 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
                 </div>
               </div>
 
-              {/* Spin Wheel Interface */}
-              {!hasSpun && !isWheelSpinning && (
-                <div className="space-y-6 flex flex-col items-center">
+              {loading || !aiProposedData ? (
+                <div className="text-center py-8">
+                  <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-500 border-r-transparent"></div>
+                  <p className="text-muted-foreground text-sm mt-4">Loading AI offer...</p>
+                </div>
+              ) : (
+                <>
+                  {/* Spin Wheel Interface */}
+                  {!hasSpun && !isWheelSpinning && (
+                    <div className="space-y-6 flex flex-col items-center">
                   {/* Circular Wheel Display */}
                   <div className="relative w-64 h-64">
                     {/* Pointer at the top */}
@@ -741,6 +784,8 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
                   </motion.div>
                 )}
               </AnimatePresence>
+                </>
+              )}
             </motion.div>
           );
         }
