@@ -1,10 +1,11 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, TrendingUp, Dices, Gift, DollarSign, Trophy, XCircle, Award, Coins, Star, Percent } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { evaluateSmartOffers } from "@/lib/api";
 
 interface PromotionCardsProps {
   cartId?: string;
@@ -15,14 +16,19 @@ interface PromotionCardsProps {
 }
 
 const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, storeId }: PromotionCardsProps) => {
-  // Hardcoded n8n response data
-  const [aiProposedData] = useState({
+  // Fallback hardcoded data (from your friend)
+  const fallbackData = {
     proposedDiscountPercentage: "25",
     proposedDiscountAmount: 12.38,
     proposedLoyaltyPoints: 12,
     proposedMinBidAmount: 10,
     proposedSpinWheelValues: [15, 13, 12, 10]
-  });
+  };
+
+  // State for AI data (from n8n API or fallback)
+  const [aiProposedData, setAiProposedData] = useState(fallbackData);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Bidding game state
   const [userBid, setUserBid] = useState<string>("");
@@ -38,6 +44,51 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
   const [selectedSegment, setSelectedSegment] = useState<number>(0);
   const [hasSpun, setHasSpun] = useState(false);
 
+  // Fetch AI data from n8n with fallback
+  useEffect(() => {
+    const fetchAiData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await evaluateSmartOffers({
+          customerId: customerId || 3,
+          cartId: cartId || "50656685-567c-42c9-9a1e-9389e9f76b68",
+          merchantId: merchantId || "",
+          storeId: storeId || ""
+        });
+
+        console.log('n8n API Response:', data);
+
+        // If we got valid data from n8n, use it
+        if (data && data.length > 0) {
+          const firstOffer = data[0];
+          // Parse n8n response and map to our format
+          const n8nData = {
+            proposedDiscountPercentage: String(firstOffer.offer_value || fallbackData.proposedDiscountPercentage),
+            proposedDiscountAmount: Number(firstOffer.offer_value) || fallbackData.proposedDiscountAmount,
+            proposedLoyaltyPoints: Number(firstOffer.reward_points) || fallbackData.proposedLoyaltyPoints,
+            proposedMinBidAmount: Number(firstOffer.ai_bid || firstOffer.aiBid || firstOffer.AI_BID) || fallbackData.proposedMinBidAmount,
+            proposedSpinWheelValues: firstOffer.spin_values || fallbackData.proposedSpinWheelValues
+          };
+          setAiProposedData(n8nData);
+        } else {
+          // No data from n8n, use fallback
+          console.log('No data from n8n, using fallback');
+          setAiProposedData(fallbackData);
+        }
+      } catch (err) {
+        console.error("Error fetching n8n data, using fallback:", err);
+        setError(err instanceof Error ? err.message : "Failed to fetch AI data");
+        // Use fallback data on error
+        setAiProposedData(fallbackData);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAiData();
+  }, [cartId, customerId, merchantId, storeId]);
+
   // Handle bid submission
   const handleBidSubmit = () => {
     const bidAmount = parseFloat(userBid);
@@ -52,15 +103,12 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
       return;
     }
 
-    // Use proposedMinBidAmount as AI bid
     const aiBid = aiProposedData.proposedMinBidAmount;
 
-    // Start spinning
     setHasBid(true);
     setIsSpinning(true);
     setShowResult(false);
 
-    // Simulate spin wheel for 3 seconds
     setTimeout(() => {
       setIsSpinning(false);
       setUserWon(bidAmount > aiBid);
@@ -79,10 +127,8 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
     setIsWheelSpinning(true);
     setShowWheelResult(false);
 
-    // Randomly select a segment
     const randomIndex = Math.floor(Math.random() * aiProposedData.proposedSpinWheelValues.length);
 
-    // Simulate spinning for 3 seconds
     setTimeout(() => {
       setSelectedSegment(randomIndex);
       setWheelResult(aiProposedData.proposedSpinWheelValues[randomIndex]);
@@ -118,7 +164,6 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
     }
   ];
 
-  // Wheel icons for the spin wheel
   const wheelIcons = [Gift, Trophy, Coins, DollarSign];
 
   return (
@@ -150,72 +195,85 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
                 </div>
               </div>
 
-              {/* AI Proposed Discount Card */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2 }}
-                className="relative overflow-hidden bg-gradient-to-br from-purple-900/40 via-pink-900/40 to-orange-900/40 rounded-2xl p-6 border border-purple-500/30 backdrop-blur-sm"
-              >
-                {/* Animated background effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-orange-600/10 animate-pulse" />
-
-                <div className="relative z-10 space-y-4">
-                  <div className="flex items-center justify-between flex-wrap gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-3 rounded-xl shadow-lg">
-                        <Percent className="w-6 h-6 text-white" />
-                      </div>
-                      <div>
-                        <h4 className="text-lg font-bold text-foreground">AI Proposed Discount</h4>
-                        <p className="text-xs text-muted-foreground">Personalized just for you</p>
-                      </div>
-                    </div>
-                    <Badge className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-lg px-4 py-2 shadow-lg">
-                      {aiProposedData.proposedDiscountPercentage}% OFF
-                    </Badge>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="bg-black/30 rounded-xl p-4 border border-purple-500/20">
-                      <div className="flex items-center gap-2 mb-2">
-                        <DollarSign className="w-4 h-4 text-purple-400" />
-                        <p className="text-xs text-muted-foreground">AI Discount Amount</p>
-                      </div>
-                      <p className="text-2xl font-bold text-purple-400">
-                        ${aiProposedData.proposedDiscountAmount.toFixed(2)}
-                      </p>
-                    </div>
-
-                    <div className="bg-black/30 rounded-xl p-4 border border-green-500/20">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Trophy className="w-4 h-4 text-green-400" />
-                        <p className="text-xs text-muted-foreground">Your Cart Total</p>
-                      </div>
-                      <p className="text-2xl font-bold text-green-400">
-                        ${(cartTotal - aiProposedData.proposedDiscountAmount).toFixed(2)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg p-4 border border-purple-500/20">
-                    <div className="flex items-center justify-between flex-wrap gap-3">
-                      <div>
-                        <p className="text-sm text-muted-foreground mb-1">Original Cart Total</p>
-                        <p className="text-lg font-semibold text-foreground line-through opacity-60">
-                          ${cartTotal.toFixed(2)}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground mb-1">You Save</p>
-                        <p className="text-2xl font-bold text-pink-400">
-                          ${aiProposedData.proposedDiscountAmount.toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-purple-500 border-r-transparent"></div>
+                  <p className="text-muted-foreground text-sm mt-4">Loading AI offer...</p>
                 </div>
-              </motion.div>
+              ) : (
+                <>
+                  {error && (
+                    <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mb-4 text-xs text-yellow-400">
+                      Using fallback data: {error}
+                    </div>
+                  )}
+                  {/* AI Proposed Discount Card */}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="relative overflow-hidden bg-gradient-to-br from-purple-900/40 via-pink-900/40 to-orange-900/40 rounded-2xl p-6 border border-purple-500/30 backdrop-blur-sm"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-orange-600/10 animate-pulse" />
+
+                    <div className="relative z-10 space-y-4">
+                      <div className="flex items-center justify-between flex-wrap gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-gradient-to-br from-purple-500 to-pink-500 p-3 rounded-xl shadow-lg">
+                            <Percent className="w-6 h-6 text-white" />
+                          </div>
+                          <div>
+                            <h4 className="text-lg font-bold text-foreground">AI Proposed Discount</h4>
+                            <p className="text-xs text-muted-foreground">Personalized just for you</p>
+                          </div>
+                        </div>
+                        <Badge className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-lg px-4 py-2 shadow-lg">
+                          {aiProposedData.proposedDiscountPercentage}% OFF
+                        </Badge>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="bg-black/30 rounded-xl p-4 border border-purple-500/20">
+                          <div className="flex items-center gap-2 mb-2">
+                            <DollarSign className="w-4 h-4 text-purple-400" />
+                            <p className="text-xs text-muted-foreground">AI Discount Amount</p>
+                          </div>
+                          <p className="text-2xl font-bold text-purple-400">
+                            ${aiProposedData.proposedDiscountAmount.toFixed(2)}
+                          </p>
+                        </div>
+
+                        <div className="bg-black/30 rounded-xl p-4 border border-green-500/20">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Trophy className="w-4 h-4 text-green-400" />
+                            <p className="text-xs text-muted-foreground">Your Cart Total</p>
+                          </div>
+                          <p className="text-2xl font-bold text-green-400">
+                            ${(cartTotal - aiProposedData.proposedDiscountAmount).toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg p-4 border border-purple-500/20">
+                        <div className="flex items-center justify-between flex-wrap gap-3">
+                          <div>
+                            <p className="text-sm text-muted-foreground mb-1">Original Cart Total</p>
+                            <p className="text-lg font-semibold text-foreground line-through opacity-60">
+                              ${cartTotal.toFixed(2)}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-muted-foreground mb-1">You Save</p>
+                            <p className="text-2xl font-bold text-pink-400">
+                              ${aiProposedData.proposedDiscountAmount.toFixed(2)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                </>
+              )}
             </motion.div>
           );
         }
@@ -251,7 +309,6 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
                 transition={{ delay: 0.2 }}
                 className="relative overflow-hidden bg-gradient-to-br from-green-900/40 via-emerald-900/40 to-teal-900/40 rounded-2xl p-6 border border-green-500/30 backdrop-blur-sm"
               >
-                {/* Animated background effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-green-600/10 via-emerald-600/10 to-teal-600/10 animate-pulse" />
 
                 <div className="relative z-10 space-y-4">
@@ -489,7 +546,7 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
                       <div className="w-full h-full rounded-full bg-gradient-to-br from-slate-900 to-slate-800 relative overflow-hidden">
                         {/* Wheel segments with icons */}
                         {wheelIcons.map((WheelIcon, i) => {
-                          const rotation = i * 90; // 4 segments, 90 degrees each
+                          const rotation = i * 90;
                           const colors = [
                             'from-blue-500/20 to-blue-600/20',
                             'from-indigo-500/20 to-indigo-600/20',
@@ -580,7 +637,7 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
                           <div className="w-full h-full rounded-full bg-gradient-to-br from-slate-900 to-slate-800 relative overflow-hidden">
                             {/* Wheel segments with icons */}
                             {wheelIcons.map((WheelIcon, i) => {
-                              const rotation = i * 90; // 4 segments, 90 degrees each
+                              const rotation = i * 90;
                               const colors = [
                                 'from-blue-500/20 to-blue-600/20',
                                 'from-indigo-500/20 to-indigo-600/20',
@@ -688,7 +745,6 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
           );
         }
 
-        // Default rendering for other promotions (shouldn't reach here)
         return null;
       })}
     </div>

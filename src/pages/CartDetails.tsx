@@ -15,10 +15,11 @@ const CartDetails = () => {
   const customerId = searchParams.get("customerId") || "3"; // Default to 3 if not provided
   const merchantId = searchParams.get("merchantId") || "";
   const storeId = searchParams.get("storeId") || "";
+  const platform = searchParams.get("platform") || "";
 
   const { data: cart, isLoading, error } = useQuery({
-    queryKey: ["cart", id],
-    queryFn: () => getCartDetails(id!),
+    queryKey: ["cart", id, platform],
+    queryFn: () => getCartDetails(id!, platform),
     enabled: !!id,
   });
 

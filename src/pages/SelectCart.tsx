@@ -47,8 +47,9 @@ const SelectCart = () => {
       const customerIdParam = customerId.trim() || "3"; // Default to 3 if not provided
       const merchantIdParam = selectedMerchant?._id || "";
       const storeIdParam = selectedStore?.storeId || "";
+      const platformParam = selectedStore?.platform || "";
 
-      navigate(`/cart/${customCartId.trim()}?customerId=${customerIdParam}&merchantId=${merchantIdParam}&storeId=${storeIdParam}`);
+      navigate(`/cart/${customCartId.trim()}?customerId=${customerIdParam}&merchantId=${merchantIdParam}&storeId=${storeIdParam}&platform=${platformParam}`);
     } else {
       alert("Please enter a valid Cart ID");
     }
