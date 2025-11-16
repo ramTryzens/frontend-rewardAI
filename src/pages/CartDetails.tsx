@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getCartDetails } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Package, DollarSign, User, ArrowLeft, AlertCircle, Bot, Laptop, LineChart, Gift, Database, Search, Sparkles } from "lucide-react";
+import { ShoppingCart, Package, DollarSign, User, ArrowLeft, AlertCircle, Bot, Laptop, LineChart, Gift, Database, Search, Sparkles, MapPin, FileText } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import PromotionCards from "@/components/PromotionCards";
 import Logo from "@/components/Logo";
@@ -20,9 +20,23 @@ const CartDetails = () => {
   const merchantEmail = decodeURIComponent(searchParams.get("merchantEmail") || "");
   const [isN8nLoading, setIsN8nLoading] = useState(true);
 
+  // Helper function to format address object into readable string
+  const formatAddress = (address: any) => {
+    if (!address) return "";
+    const parts = [
+      address.address1,
+      address.address2,
+      address.city,
+      address.state_or_province,
+      address.postal_code,
+      address.country
+    ].filter(Boolean);
+    return parts.join(", ");
+  };
+
   const { data: cart, isLoading, error } = useQuery({
     queryKey: ["cart", id, platform],
-    queryFn: () => getCartDetails(id!, platform),
+    queryFn: () => getCartDetails(id!, platform, customerId),
     enabled: !!id,
   });
 
@@ -153,6 +167,50 @@ const CartDetails = () => {
               </motion.div>
             </div>
           </div>
+
+          {/* Account Details */}
+          {(cart?.numberOfOrders !== undefined || cart?.mainAddress) && (
+            <div className="p-6 border-b border-white/10">
+              <div className="flex items-center gap-2 mb-6">
+                <User className="w-5 h-5 text-foreground" />
+                <h2 className="text-xl font-semibold text-foreground">Account Details</h2>
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                {cart?.numberOfOrders !== undefined && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="flex items-center gap-3"
+                  >
+                    <div className="bg-white/10 p-3 rounded-xl">
+                      <FileText className="w-5 h-5 text-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Number of Orders</p>
+                      <p className="text-foreground font-bold text-xl">{cart.numberOfOrders}</p>
+                    </div>
+                  </motion.div>
+                )}
+                {cart?.mainAddress && (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="flex items-center gap-3"
+                  >
+                    <div className="bg-white/10 p-3 rounded-xl">
+                      <MapPin className="w-5 h-5 text-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Address</p>
+                      <p className="text-foreground font-medium">{formatAddress(cart.mainAddress)}</p>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Items List */}
           <div className="p-6">
