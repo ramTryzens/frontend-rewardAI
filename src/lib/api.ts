@@ -12,6 +12,23 @@ export interface CartItem {
   image_url?: string;
 }
 
+export interface Address {
+  id?: string | number;
+  first_name?: string;
+  last_name?: string;
+  company?: string;
+  address1?: string;
+  address2?: string;
+  city?: string;
+  state_or_province?: string;
+  postal_code?: string;
+  country?: string;
+  country_code?: string;
+  phone?: string;
+  address_type?: string;
+  customer_id?: number;
+}
+
 export interface Cart {
   id: string;
   customer_id?: number;
@@ -23,14 +40,16 @@ export interface Cart {
   line_items: {
     physical_items: CartItem[];
   };
+  numberOfOrders?: number;
+  mainAddress?: Address;
 }
 
-export async function getCartDetails(cartId: string, platform?: string): Promise<Cart> {
+export async function getCartDetails(cartId: string, platform?: string, customerId?: string): Promise<Cart> {
   // Determine which endpoint to use based on platform
   const isMagento = platform && platform.toLowerCase() !== 'bigcommerce' && platform.toLowerCase() !== 'big commerce';
   const endpoint = isMagento
     ? `${API_BASE_URL}/magento/carts/${cartId}`
-    : `${API_BASE_URL}/carts/${cartId}`;
+    : `${API_BASE_URL}/carts/${cartId}?customerId=${customerId}`;
 
   console.log(`🛒 Fetching cart from ${isMagento ? 'Magento (Adobe Commerce)' : 'BigCommerce'} via backend - Platform: ${platform}`);
 
