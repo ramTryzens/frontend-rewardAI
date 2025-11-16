@@ -5,6 +5,7 @@ import { ShoppingCart, ChevronRight, ChevronLeft, Store as StoreIcon, Building2 
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import Logo from "@/components/Logo";
+import DemoBadge from "@/components/DemoBadge";
 import { getMerchants, Merchant, Store } from "@/lib/api";
 
 const SelectCart = () => {
@@ -121,14 +122,17 @@ const SelectCart = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-bg flex items-center justify-center p-4 overflow-hidden">
+    <div className="min-h-screen bg-gradient-bg overflow-hidden">
+      <DemoBadge />
+      <div className="max-w-4xl mx-auto px-4 pt-4">
+        <Logo />
+      </div>
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="w-full max-w-4xl"
+        className="w-full max-w-4xl mx-auto px-4 py-8"
       >
-        <Logo />
 
         {/* Progress Indicator */}
         <div className="flex items-center justify-center gap-2 mb-8">

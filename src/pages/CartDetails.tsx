@@ -7,6 +7,7 @@ import { ShoppingCart, Package, DollarSign, User, ArrowLeft, AlertCircle, Bot, L
 import { Skeleton } from "@/components/ui/skeleton";
 import PromotionCards from "@/components/PromotionCards";
 import Logo from "@/components/Logo";
+import DemoBadge from "@/components/DemoBadge";
 import { useState, useEffect } from "react";
 
 const CartDetails = () => {
@@ -51,36 +52,45 @@ const CartDetails = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-bg flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-4xl"
-        >
+      <div className="min-h-screen bg-gradient-bg">
+        <DemoBadge />
+        <div className="max-w-4xl mx-auto px-4 pt-4">
           <Logo />
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
-            <Skeleton className="h-10 w-48 mb-6 bg-white/20" />
-            <div className="space-y-4">
-              <Skeleton className="h-20 w-full bg-white/20" />
-              <Skeleton className="h-20 w-full bg-white/20" />
-              <Skeleton className="h-20 w-full bg-white/20" />
+        </div>
+        <div className="flex items-center justify-center min-h-[calc(100vh-120px)] px-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-4xl"
+          >
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
+              <Skeleton className="h-10 w-48 mb-6 bg-white/20" />
+              <div className="space-y-4">
+                <Skeleton className="h-20 w-full bg-white/20" />
+                <Skeleton className="h-20 w-full bg-white/20" />
+                <Skeleton className="h-20 w-full bg-white/20" />
+              </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-bg flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-2xl text-center"
-        >
+      <div className="min-h-screen bg-gradient-bg">
+        <DemoBadge />
+        <div className="max-w-4xl mx-auto px-4 pt-4">
           <Logo />
-          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
+        </div>
+        <div className="flex items-center justify-center min-h-[calc(100vh-120px)] px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full max-w-2xl text-center"
+          >
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-8 border border-white/20">
             <AlertCircle className="w-16 h-16 text-destructive mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-foreground mb-4">Error Loading Cart</h2>
             <p className="text-muted-foreground mb-6">
@@ -93,7 +103,8 @@ const CartDetails = () => {
               Back to Cart Selection
             </Button>
           </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     );
   }
@@ -103,14 +114,17 @@ const CartDetails = () => {
   const currency = cart?.currency?.code || "USD";
 
   return (
-    <div className="min-h-screen bg-gradient-bg p-4 py-12">
+    <div className="min-h-screen bg-gradient-bg">
+      <DemoBadge />
+      <div className="max-w-4xl mx-auto px-4 pt-4">
+        <Logo />
+      </div>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="max-w-4xl mx-auto"
+        className="max-w-4xl mx-auto px-4 pb-12"
       >
-        <Logo />
         <Button
           variant="ghost"
           onClick={() => navigate("/select-cart")}

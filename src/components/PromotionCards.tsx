@@ -194,6 +194,10 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
 
         // Special rendering for Generative Discount with AI Proposed data
         if (promo.id === 1) {
+          // Only show if proposedDiscountAmount exists
+          if (!aiProposedData?.proposedDiscountAmount) {
+            return null;
+          }
           return (
             <motion.div
               key={promo.id}
@@ -301,6 +305,10 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
 
         // Special rendering for Loyalty Points section
         if (promo.id === 2) {
+          // Only show if proposedLoyaltyPoints exists
+          if (!aiProposedData?.proposedLoyaltyPoints) {
+            return null;
+          }
           return (
             <motion.div
               key={promo.id}
@@ -394,6 +402,10 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
 
         // Special rendering for Try Your Luck - Bid against AI
         if (promo.id === 3) {
+          // Only show if proposedMinBidAmount exists
+          if (!aiProposedData?.proposedMinBidAmount) {
+            return null;
+          }
           return (
             <motion.div
               key={promo.id}
@@ -544,6 +556,10 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
 
         // Special rendering for Spin and Win
         if (promo.id === 4) {
+          // Only show if proposedSpinWheelValues exists
+          if (!aiProposedData?.proposedSpinWheelValues || !Array.isArray(aiProposedData?.proposedSpinWheelValues) || aiProposedData?.proposedSpinWheelValues.length === 0) {
+            return null;
+          }
           return (
             <motion.div
               key={promo.id}
