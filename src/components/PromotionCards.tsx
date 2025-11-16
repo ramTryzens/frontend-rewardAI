@@ -14,9 +14,10 @@ interface PromotionCardsProps {
   merchantId?: string;
   storeId?: string;
   merchantEmail?: string;
+  onLoadingChange?: (isLoading: boolean) => void;
 }
 
-const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, storeId, merchantEmail }: PromotionCardsProps) => {
+const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, storeId, merchantEmail, onLoadingChange }: PromotionCardsProps) => {
   // Fallback hardcoded data (from your friend)
   const fallbackData = {
     proposedDiscountPercentage: "25",
@@ -49,6 +50,7 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
   useEffect(() => {
     const fetchAiData = async () => {
       setLoading(true);
+      onLoadingChange?.(true);
       setError(null);
       try {
         const payload = {
@@ -100,11 +102,12 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
         setAiProposedData(fallbackData);
       } finally {
         setLoading(false);
+        onLoadingChange?.(false);
       }
     };
 
     fetchAiData();
-  }, [cartId, customerId, merchantId, storeId, merchantEmail]);
+  }, [cartId, customerId, merchantId, storeId, merchantEmail, onLoadingChange]);
 
   // Handle bid submission
   const handleBidSubmit = () => {
