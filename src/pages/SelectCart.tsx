@@ -200,32 +200,37 @@ const SelectCart = () => {
                         </>
                       )}
 
-                      {/* Carousel Container - Shows current card centered + peek of next */}
+                      {/* Carousel Container - Shows current card centered */}
                       <div className="w-full max-w-2xl px-14">
-                        <div className="overflow-x-hidden overflow-y-visible py-2">
-                          <motion.div
-                            className="flex gap-4"
-                            animate={{
-                              x: `calc(-${currentMerchantIndex * 100}%)`
-                            }}
-                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                          >
-                            {merchants.map((merchant, index) => (
-                              <motion.div
-                                key={merchant._id}
-                                whileHover={{ scale: 1.015 }}
-                                whileTap={{ scale: 0.985 }}
-                                onClick={() => {
-                                  setSelectedMerchant(merchant);
-                                  setCurrentMerchantIndex(index);
-                                }}
-                                className={`flex-shrink-0 bg-white/10 backdrop-blur-md rounded-xl p-6 border-2 cursor-pointer transition-all ${
-                                  selectedMerchant?._id === merchant._id
-                                    ? 'border-primary shadow-lg shadow-primary/20'
-                                    : 'border-white/20 hover:border-primary/60 opacity-60 hover:opacity-80'
-                                }`}
-                                style={{ width: 'calc(100% - 1rem)' }}
-                              >
+                        <div className="relative py-8">
+                          <div className="overflow-hidden">
+                            <motion.div
+                              className="flex"
+                              animate={{
+                                x: `calc(-${currentMerchantIndex * 100}%)`
+                              }}
+                              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            >
+                              {merchants.map((merchant, index) => (
+                                <div
+                                  key={merchant._id}
+                                  className="flex-shrink-0 px-3"
+                                  style={{ width: '100%' }}
+                                >
+                                  <motion.div
+                                    whileHover={{ scale: 1.015 }}
+                                    whileTap={{ scale: 0.985 }}
+                                    onClick={() => {
+                                      setSelectedMerchant(merchant);
+                                      setCurrentMerchantIndex(index);
+                                    }}
+                                    className={`bg-white/10 backdrop-blur-md rounded-xl border-2 cursor-pointer transition-all ${
+                                      selectedMerchant?._id === merchant._id
+                                        ? 'border-primary shadow-lg shadow-primary/20'
+                                        : 'border-white/20 hover:border-primary/60 opacity-60 hover:opacity-80'
+                                    }`}
+                                    style={{ padding: '1.5rem 2rem' }}
+                                  >
                                 <div className="flex items-center gap-4">
                                   <div className="bg-gradient-primary p-3 rounded-lg flex-shrink-0">
                                     <Building2 className="w-6 h-6 text-primary-foreground" />
@@ -243,9 +248,11 @@ const SelectCart = () => {
                                     </div>
                                   </div>
                                 </div>
-                              </motion.div>
-                            ))}
-                          </motion.div>
+                                  </motion.div>
+                                </div>
+                              ))}
+                            </motion.div>
+                          </div>
                         </div>
                       </div>
 
@@ -348,32 +355,37 @@ const SelectCart = () => {
                       </>
                     )}
 
-                    {/* Carousel Container - Shows current card centered + peek of next */}
+                    {/* Carousel Container - Shows current card centered */}
                     <div className="w-full max-w-2xl px-14">
-                      <div className="overflow-x-hidden overflow-y-visible py-2">
-                        <motion.div
-                          className="flex gap-4"
-                          animate={{
-                            x: `calc(-${currentStoreIndex * 100}%)`
-                          }}
-                          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        >
-                          {selectedMerchant.stores.map((store, index) => (
-                            <motion.div
-                              key={store.storeId}
-                              whileHover={{ scale: 1.015 }}
-                              whileTap={{ scale: 0.985 }}
-                              onClick={() => {
-                                setSelectedStore(store);
-                                setCurrentStoreIndex(index);
-                              }}
-                              className={`flex-shrink-0 bg-white/10 backdrop-blur-md rounded-xl p-6 border-2 cursor-pointer transition-all ${
-                                selectedStore?.storeId === store.storeId
-                                  ? 'border-primary shadow-lg shadow-primary/20'
-                                  : 'border-white/20 hover:border-primary/60 opacity-60 hover:opacity-80'
-                              }`}
-                              style={{ width: 'calc(100% - 1rem)' }}
-                            >
+                      <div className="relative py-8">
+                        <div className="overflow-hidden">
+                          <motion.div
+                            className="flex"
+                            animate={{
+                              x: `calc(-${currentStoreIndex * 100}%)`
+                            }}
+                            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                          >
+                            {selectedMerchant.stores.map((store, index) => (
+                              <div
+                                key={store.storeId}
+                                className="flex-shrink-0 px-3"
+                                style={{ width: '100%' }}
+                              >
+                                <motion.div
+                                  whileHover={{ scale: 1.015 }}
+                                  whileTap={{ scale: 0.985 }}
+                                  onClick={() => {
+                                    setSelectedStore(store);
+                                    setCurrentStoreIndex(index);
+                                  }}
+                                  className={`bg-white/10 backdrop-blur-md rounded-xl border-2 cursor-pointer transition-all ${
+                                    selectedStore?.storeId === store.storeId
+                                      ? 'border-primary shadow-lg shadow-primary/20'
+                                      : 'border-white/20 hover:border-primary/60 opacity-60 hover:opacity-80'
+                                  }`}
+                                  style={{ padding: '1.5rem 2rem' }}
+                                >
                               <div className="flex items-center gap-4">
                                 <div className="bg-gradient-primary p-3 rounded-lg flex-shrink-0">
                                   <StoreIcon className="w-6 h-6 text-primary-foreground" />
@@ -396,9 +408,11 @@ const SelectCart = () => {
                                   </div>
                                 </div>
                               </div>
-                            </motion.div>
-                          ))}
-                        </motion.div>
+                                </motion.div>
+                              </div>
+                            ))}
+                          </motion.div>
+                        </div>
                       </div>
                     </div>
 
