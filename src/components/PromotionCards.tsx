@@ -76,13 +76,33 @@ const PromotionCards = ({ cartId, customerId, cartTotal = 49.52, merchantId, sto
           console.log('📦 Parsed offer data:', offerData);
 
           // Parse n8n response and map to our format
-          const n8nData = {
-            proposedDiscountPercentage: String(offerData.proposedDiscountPercentage || fallbackData.proposedDiscountPercentage),
-            proposedDiscountAmount: Number(offerData.proposedDiscountAmount) || fallbackData.proposedDiscountAmount,
-            proposedLoyaltyPoints: Number(offerData.proposedLoyaltyPoints) || fallbackData.proposedLoyaltyPoints,
-            proposedMinBidAmount: Number(offerData.proposedMinBidAmount) || fallbackData.proposedMinBidAmount,
-            proposedSpinWheelValues: Array.isArray(offerData.proposedSpinWheelValues) ? offerData.proposedSpinWheelValues : fallbackData.proposedSpinWheelValues
-          };
+          // Only include attributes that are actually present in the API response
+          const n8nData: any = {};
+
+          // Only include proposedDiscountPercentage if it exists in the response
+          if (offerData.proposedDiscountPercentage) {
+            n8nData.proposedDiscountPercentage = String(offerData.proposedDiscountPercentage);
+          }
+
+          // Only include proposedDiscountAmount if it exists in the response
+          if (offerData.proposedDiscountAmount) {
+            n8nData.proposedDiscountAmount = Number(offerData.proposedDiscountAmount);
+          }
+
+          // Only include proposedLoyaltyPoints if it exists in the response
+          if (offerData.proposedLoyaltyPoints) {
+            n8nData.proposedLoyaltyPoints = Number(offerData.proposedLoyaltyPoints);
+          }
+
+          // Only include proposedMinBidAmount if it exists in the response
+          if (offerData.proposedMinBidAmount) {
+            n8nData.proposedMinBidAmount = Number(offerData.proposedMinBidAmount);
+          }
+
+          // Only include proposedSpinWheelValues if it exists and is an array in the response
+          if (Array.isArray(offerData.proposedSpinWheelValues) && offerData.proposedSpinWheelValues.length > 0) {
+            n8nData.proposedSpinWheelValues = offerData.proposedSpinWheelValues;
+          }
 
           console.log('✅ Final AI data to display:', n8nData);
           console.log('⚠️ Using fallback for:', {
